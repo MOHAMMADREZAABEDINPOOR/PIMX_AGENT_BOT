@@ -1,0 +1,25 @@
+{
+  "name": "ai-telegram-bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "login": "wrangler login",
+    "kv": "wrangler kv namespace create BOT_KV",
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev --remote",
+    "logs": "wrangler tail",
+    "smoke": "node tools/smoke.mjs",
+    "check": "node --check index.js",
+    "test": "node --test tools/streaming.test.mjs tools/portable-backup.test.mjs tools/bot.test.mjs",
+    "test:ui": "node --test tools/miniapp.test.mjs tools/model-picker.test.mjs tools/navigation.test.mjs",
+    "preview": "node tools/ui-preview.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "wrangler": "^4.143.0"
+  },
+  "overrides": {
+    "undici": "^7.29.1"
+  }
+}
