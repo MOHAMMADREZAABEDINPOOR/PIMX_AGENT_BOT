@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/readme/hero.gif" width="1200" alt="PIMX AGENT BOT: an animated Telegram workspace connected to AI providers, knowledge and tools" />
+<img src="assets/readme/hero.gif" width="1200" height="540" alt="PIMX Agent Bot: original animated Telegram phone, paper plane, provider nodes and memory" />
 
 **[English](README.md) · [فارسی](README.fa.md)**
 
@@ -30,6 +30,17 @@ A personal AI workspace combining a Telegram bot, a Persian RTL Mini App and a m
 [✨ Features](#features) · [👀 Preview](#preview) · [🚀 Getting started](#getting-started) · [⚙️ Configuration](#configuration) · [🌍 Deployment](#deployment) · [🧪 Checks](#checks)
 
 ---
+
+## 🪐 One bot. A connected AI workspace.
+
+The original 3D artwork links a Telegram phone and paper plane to AI, API and storage nodes. It represents the actual architecture: Telegram identity, your selected providers, streamed conversations and persistent personal data. Every project has its own scene; this one belongs to the bot.
+
+| Start here | Next step |
+|:---|:---|
+| 👀 Try the interface | Run the isolated fixture preview without live provider credentials |
+| 🔌 Connect a model | Open the Mini App through Telegram, add a provider and discover its models |
+| 💬 Keep a conversation | Choose a model, stream a response and reopen the saved chat |
+| 💾 Carry your work | Export your archive and explicitly confirm a restore into another account |
 
 <a id="features"></a>
 

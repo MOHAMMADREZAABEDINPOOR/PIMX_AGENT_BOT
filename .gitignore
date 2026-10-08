@@ -14,3 +14,20 @@ d1out.txt
 d1v.txt
 prompt.txt
 super_prompt.md
+
+# Local runtime and publication artifacts
+.env
+.env.*
+!.env.example
+.dev.vars*
+.wrangler/
+.manus-logs/
+node_modules/
+dist/
+artifacts/
+*.log
+*.zip
+*.db
+*.sqlite*
+*.pem
+*.key

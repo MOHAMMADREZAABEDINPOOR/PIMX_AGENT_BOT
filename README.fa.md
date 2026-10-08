@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/readme/hero.gif" width="1200" alt="پیمکس ایجنت بات؛ فضای تلگرامی متصل به پروایدرهای هوش مصنوعی، دانش و ابزارها" />
+<img src="assets/readme/hero.gif" width="1200" height="540" alt="PIMX Agent Bot: original animated Telegram phone, paper plane, provider nodes and memory" />
 
 **[English](README.md) · [فارسی](README.fa.md)**
 
@@ -10,6 +10,8 @@
 ![Storage](https://img.shields.io/badge/Storage-D1_+_KV-a99af7)
 
 </div>
+
+<div dir="rtl">
 
 # 🤖 PIMX AGENT BOT
 
@@ -30,6 +32,17 @@
 [✨ قابلیت‌ها](#features) · [👀 پیش‌نمایش](#preview) · [🚀 شروع سریع](#getting-started) · [⚙️ تنظیمات](#configuration) · [🌍 استقرار](#deployment) · [🧪 تست‌ها](#checks)
 
 ---
+
+## 🪐 یک ربات؛ یک فضای کاری متصل
+
+در انیمیشن سه‌بعدی اختصاصی این پروژه، گوشی تلگرام و هواپیمای کاغذی به گره‌های هوش مصنوعی، API و حافظه متصل‌اند. این تصویر از معماری واقعی پروژه الهام گرفته است: هویت تلگرام، ارائه‌دهنده‌های انتخابی، پاسخ‌های زنده و داده‌های شخصی پایدار. این صحنه مخصوص همین ربات ساخته شده است.
+
+| شروع | قدم بعدی |
+|:---|:---|
+| 👀 دیدن رابط | اجرای پیش‌نمایش ایزوله با دادهٔ نمونه و بدون کلید سرویس زنده |
+| 🔌 اتصال مدل | ورود از تلگرام، افزودن ارائه‌دهنده و دریافت مدل‌های آن |
+| 💬 ادامهٔ گفتگو | انتخاب مدل، دریافت پاسخ زنده و باز کردن گفتگوی ذخیره‌شده |
+| 💾 انتقال کار | خروجی گرفتن از آرشیو و تأیید صریح بازیابی در حساب دیگر |
 
 <a id="features"></a>
 
@@ -85,12 +98,16 @@
 
 Node.js نسخهٔ 22.12 یا بالاتر و npm لازم است. برای اجرای واقعی، حساب Cloudflare، توکن ربات از [BotFather](https://t.me/BotFather) و کلید سرویس هوش مصنوعی موردنظرت را آماده کن.
 
+<div dir="ltr">
+
 ```bash
 git clone https://github.com/MOHAMMADREZAABEDINPOOR/PIMX_AGENT_BOT.git
 cd PIMX_AGENT_BOT
 npm ci
 npm run preview
 ```
+
+</div>
 
 آدرس `http://127.0.0.1:8787/app` را باز کن. این پیش‌نمایش از حساب‌های آزمایشی امضاشده، ذخیره‌سازی در حافظه و پاسخ زندهٔ شبیه‌سازی‌شده استفاده می‌کند و به ربات یا پروایدر واقعی وصل نمی‌شود. کاربردش توسعه و بررسی رابط است.
 
@@ -134,13 +151,19 @@ Bindingهای میزبانی: **`DB`** برای D1 و **`BOT_KV`** برای KV. 
 
 ### راه‌اندازی اولیه و دیپلوی محلی
 
+<div dir="ltr">
+
 ```bash
 npm run login
 npx wrangler kv namespace create BOT_KV
 npx wrangler d1 create telegram-multi-ai-bots
 ```
 
+</div>
+
 شناسه‌های خروجی را در `wrangler.toml` قرار بده و نام Bindingها را `BOT_KV` و `DB` نگه دار. سپس جدول‌ها و سکرت‌ها را بساز:
+
+<div dir="ltr">
 
 ```bash
 npx wrangler d1 execute telegram-multi-ai-bots --remote --file tools/schema.sql
@@ -149,6 +172,8 @@ npx wrangler secret put ADMIN_ID
 npx wrangler secret put SECRET_KEY
 npm run deploy
 ```
+
+</div>
 
 یک‌بار `https://<your-worker>.workers.dev/setup` را باز کن تا وبهوک، دکمهٔ مینی‌اپ و دستورات ربات ثبت شوند. `/start` بفرست، مینی‌اپ را باز کن و اولین پروایدر را اضافه کن. Cron هر دقیقه برای یادآورها و کارهای زمان‌بندی‌شده اجرا می‌شود.
 
@@ -166,6 +191,8 @@ npm run deploy
 
 ## 🧭 معماری و ساختار پروژه
 
+<div dir="ltr">
+
 ```mermaid
 flowchart LR
     T[Telegram Bot] --> W[Cloudflare Worker]
@@ -177,6 +204,8 @@ flowchart LR
     W --> K[(KV)]
     W --> R[Memory / Knowledge / Agents / Operations]
 ```
+
+</div>
 
 | مسیر | مسئولیت |
 |:---|:---|
@@ -228,5 +257,7 @@ flowchart LR
 <div align="center">
 
 🤖 **PIMX AGENT BOT** · عضوی از خانوادهٔ **PIMX** · [English](README.md) · [فارسی](README.fa.md)
+
+</div>
 
 </div>
