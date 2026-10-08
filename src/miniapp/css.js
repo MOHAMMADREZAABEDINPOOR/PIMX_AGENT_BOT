@@ -2,6 +2,7 @@ import { tokensCss, lightThemeCss, a11yCss } from "../ui/theme.js";
 import { KIT_CSS } from "../ui/kit-css.js";
 import { PERSONAL_CSS } from "./personal-css.js";
 import { MODEL_PICKER_CSS } from "./model-picker-css.js";
+import { WORKSPACE_CSS } from "./workspace-css.js";
 
 // ساختار استایل: پایهٔ قدیمی (سازگاری کامل) + توکنهای مرکزی + تم روشن + دسترسپذیری + UI Kit
 export const CSS = (function () {
@@ -541,6 +542,6 @@ select.select{
 }
 html[dir="rtl"] select.select{background-position:left 12px center}
 `;
-  return base + tokensCss() + lightThemeCss() + KIT_CSS + PERSONAL_CSS + MODEL_PICKER_CSS + a11yCss();
+  return base + tokensCss() + lightThemeCss() + KIT_CSS + PERSONAL_CSS + MODEL_PICKER_CSS + WORKSPACE_CSS + a11yCss();
 })();
 

@@ -1296,7 +1296,7 @@ async function defaultModelOpts(cur) {
   try {
     const list = await usableModels();
     return list.map(function (m) {
-      return '<option value="' + h(m.id) + '"' + (cur === m.id ? " selected" : "") + ">" + h(short(m.name || m.apiModelId, 40)) + "</option>";
+      return '<option value="' + h(m.id) + '" data-detail="' + h(m.apiModelId) + '"' + (cur === m.id ? " selected" : "") + ">" + h(m.name || m.apiModelId) + " · " + h(m.provider || '') + "</option>";
     }).join("");
   } catch (e) { return ""; }
 }

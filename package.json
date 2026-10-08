@@ -12,7 +12,7 @@
     "smoke": "node tools/smoke.mjs",
     "check": "node --check index.js",
     "test": "node --test tools/streaming.test.mjs tools/portable-backup.test.mjs tools/bot.test.mjs",
-    "test:ui": "node --test tools/miniapp.test.mjs tools/model-picker.test.mjs tools/navigation.test.mjs",
+    "test:ui": "node --test tools/miniapp.test.mjs tools/model-picker.test.mjs tools/navigation.test.mjs tools/workspace.test.mjs",
     "preview": "node tools/ui-preview.mjs"
   },
   "devDependencies": {

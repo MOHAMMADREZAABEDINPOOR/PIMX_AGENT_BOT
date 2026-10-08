@@ -633,8 +633,8 @@ async function viewCouncil() {
       const on = picked.indexOf(m.id) >= 0;
       return '<button type="button" class="pick' + (on ? " on" : "") + '" data-id="' + h(m.id) + '"' + act("cnlToggle", m.id) + ">" +
         '<span class="dot ' + (m.status === "healthy" ? "ok" : m.status === "failed" ? "err" : "warn") + '"></span>' +
-        '<span class="sp trunc">' + h(short(m.name || m.apiModelId, 30)) + "</span>" +
-        '<span class="tny">' + h(short(m.provider, 12)) + "</span>" +
+        '<span class="sp trunc">' + h(m.name || m.apiModelId) + '<small class="studio-council-id" dir="ltr">' + h(m.apiModelId) + '</small></span>' +
+        '<span class="tny">' + h(m.provider) + "</span>" +
         "</button>";
     }).join("") +
     "</div>" +
@@ -669,6 +669,7 @@ function paintPicker() {
   document.querySelectorAll("#cnlPicker .pick").forEach(function (b) {
     const on = picked.indexOf(b.getAttribute("data-id")) >= 0;
     b.className = "pick" + (on ? " on" : "");
+    b.setAttribute('aria-pressed', String(on));
   });
   const cc = document.getElementById("cc");
   if (cc) { cc.disabled = picked.length > 0; if (picked.length) cc.value = picked.length; }
@@ -941,7 +942,7 @@ async function viewPlayground() {
   const models = await usableModels();
   if (!models.length) return head + setupGate("Playground");
   const opts = models.map(function (m) {
-    return '<option value="' + h(m.id) + '">' + h(short(m.name || m.apiModelId, 44)) + " · " + h(m.provider || "") + "</option>";
+    return '<option value="' + h(m.id) + '" data-detail="' + h(m.apiModelId) + '">' + h(m.name || m.apiModelId) + " · " + h(m.provider || "") + "</option>";
   }).join("");
 
   return head +

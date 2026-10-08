@@ -1,0 +1,208 @@
+export const WORKSPACE_JS = String.raw`
+/* Shared workspace components; retain the existing API/action handlers. */
+function workspaceAct(fn) {
+  const args = Array.prototype.slice.call(arguments, 1).map(function (arg) { return JSON.stringify(arg); });
+  return ' onclick="' + h(fn + '(' + args.join(',') + ')') + '"';
+}
+function workspaceHead(title, subtitle, icon, actions) {
+  return '<div class="ph studio-page-head"><div class="studio-page-icon">' + pxIcon(icon, 24) + '</div><div class="ph-t"><span class="studio-eyebrow">PIMX WORKSPACE</span><h2>' + h(title) + '</h2><p>' + h(subtitle) + '</p></div><div class="ph-a">' + (actions || '') + '</div></div>';
+}
+function workspaceAction(label, icon, action, danger) {
+  return '<button type="button" class="btn ' + (danger ? 'dan' : 'gho') + '" aria-label="' + h(label) + '" title="' + h(label) + '"' + action + '>' + pxIcon(icon, 16) + '<span>' + h(label) + '</span></button>';
+}
+function workspaceModelRow(m, selection) {
+  const status = pickerStatus(m);
+  return '<span class="studio-model-mark">' + pickerMark(m.provider || m.providerName) + '</span><span class="studio-model-copy"><bdi>' + h(m.name || m.apiModelId) + '</bdi><bdi class="studio-model-id" dir="ltr">' + h(m.apiModelId) + '</bdi><span class="studio-model-meta"><bdi>' + h(m.provider || m.providerName || 'سرویس سفارشی') + '</bdi><span class="model-status status-' + status[0] + '"><i></i>' + status[1] + '</span></span></span>' + (selection ? '<span class="studio-selection-check" aria-hidden="true">' + pxIcon('check', 15) + '</span>' : '');
+}
+VIEWS.models = async function () {
+  const d = await api('/models?size=500&sort=name');
+  let models = d.models || [];
+  if (d.total > models.length) {
+    const rest = await Promise.all(Array.from({ length: Math.ceil(d.total / 500) - 1 }, function (_, i) { return api('/models?size=500&sort=name&page=' + (i + 2)); }));
+    models = models.concat.apply(models, rest.map(function (page) { return page.models || []; }));
+  }
+  const active = models.filter(function (m) { return m.enabled !== false; }).length;
+  const healthy = models.filter(function (m) { return m.status === 'healthy'; }).length;
+  const head = workspaceHead('کتابخانهٔ مدل‌ها', 'مدل مناسب هر ایده را پیدا کن و مدیریت کن.', 'models',
+    workspaceAction('مقایسه', 'compare', workspaceAct('go', 'compare')) + '<button class="btn pri"' + workspaceAct('modelNew', '') + '>' + pxIcon('plus', 16) + 'افزودن مدل</button>');
+  const metrics = '<div class="studio-library-stats"><span><strong>' + n(models.length) + '</strong> مدل در کتابخانه</span><span><i class="studio-dot"></i><strong>' + n(active) + '</strong> فعال</span><span><strong>' + n(healthy) + '</strong> پاسخ‌گو</span></div>';
+  const toolbar = '<div class="studio-library-toolbar"><div class="studio-search">' + pxIcon('search', 19) + '<input type="search" id="modelSearch" aria-label="جستجوی کتابخانه مدل‌ها" placeholder="نام مدل، شناسه یا پروایدر…" oninput="filterModelsList(this.value)"></div><details class="studio-bulk"><summary>' + pxIcon('settings', 17) + 'مدیریت گروهی</summary><div>' + workspaceAction('تست همه', 'playground', ' onclick="bulkModels(null,\'test\')"') + workspaceAction('فعال کردن همه', 'check', ' onclick="bulkModels(null,\'enable\')"') + workspaceAction('فعال کردن سالم‌ها', 'restore', ' onclick="enableHealthy(null)"') + workspaceAction('غیرفعال کردن همه', 'close', ' onclick="bulkModels(null,\'disable\')"', true) + '</div></details></div>';
+  const rows = models.map(function (m) {
+    const enabled = m.enabled !== false;
+    return '<article class="card studio-model-card model-card' + (!enabled ? ' is-disabled' : '') + '" data-search="' + h(pickerNormalize([m.name, m.apiModelId, m.provider, (m.tags || []).join(' ')].join(' '))) + '">' +
+      '<button class="studio-model-open"' + workspaceAct('go', 'model', m.id) + '>' + workspaceModelRow(m) + '</button>' +
+      '<div class="studio-model-facts"><span>' + (m.context ? n(m.context) + ' توکن زمینه' : 'زمینه ثبت نشده') + '</span><span>' + (m.pricing && m.pricing.free ? 'رایگان' : m.costPer1M != null ? price(m.costPer1M) : 'هزینه ثبت نشده') + '</span>' + (!enabled ? '<span>غیرفعال</span>' : '') + '</div>' +
+      '<div class="studio-model-actions">' + workspaceAction('تست', 'playground', workspaceAct('modelTestSingle', m.id)) + workspaceAction(enabled ? 'غیرفعال' : 'فعال', enabled ? 'close' : 'check', workspaceAct('modelToggle', m.id, enabled)) + workspaceAction('کپی', 'copy', workspaceAct('modelCopyName', m.apiModelId)) + workspaceAction('حذف', 'trash', workspaceAct('modelDelete', m.id, m.name || m.apiModelId), true) + '</div></article>';
+  }).join('');
+  return head + metrics + toolbar + '<div class="studio-results-label"><span id="mcount" role="status" aria-live="polite">' + n(models.length) + ' مدل</span><span>برای جزئیات، مدل را باز کن</span></div><div class="studio-model-grid model-list" id="modelList">' + rows + '</div><div class="studio-empty" id="modelListEmpty"' + (models.length ? ' hidden' : '') + '>' + pxIcon('search', 28) + '<h3>مدلی پیدا نشد</h3><p>جستجو را تغییر بده یا مدل جدیدی اضافه کن.</p><button class="btn gho" onclick="document.getElementById(\'modelSearch\').value=\'\';filterModelsList(\'\')">پاک کردن جستجو</button></div>';
+};
+window.filterModelsList = function (query) {
+  const terms = pickerNormalize(query).trim().split(/\s+/).filter(Boolean);
+  let visible = 0;
+  document.querySelectorAll('#modelList .model-card').forEach(function (row) {
+    const matches = terms.every(function (term) { return row.dataset.search.includes(term); });
+    row.hidden = !matches; if (matches) visible++;
+  });
+  document.getElementById('mcount').textContent = n(visible) + ' مدل';
+  document.getElementById('modelListEmpty').hidden = visible > 0;
+};
+VIEWS.compare = async function () {
+  const models = await usableModels();
+  const selected = (S.cache.cmpSel || []).filter(function (id) { return models.some(function (m) { return m.id === id; }); });
+  S.cache.cmpSel = selected;
+  return workspaceHead('آرنای مقایسه', '۲ تا ۵ مدل را کنار هم قرار بده و عملکردشان را بسنج.', 'compare') +
+    '<div class="card studio-compare"><div class="studio-compare-header"><div><h3>تیم مقایسهٔ تو</h3><p>' + n(models.length) + ' مدل در دسترس</p></div><span class="studio-selection-count" id="cmpSelCount">' + n(selected.length) + ' از ۵ مدل</span></div><div class="studio-search">' + pxIcon('search', 19) + '<input type="search" id="cmpSearch" aria-label="جستجوی مدل برای مقایسه" placeholder="مدل یا پروایدر را جستجو کن…" oninput="filterCmpChips(this.value)"></div><div class="studio-comparison-list" id="cmpChipsList">' + models.map(function (m) {
+      const on = selected.includes(m.id);
+      return '<button type="button" class="studio-compare-option cmp-chip' + (on ? ' on' : '') + '" data-id="' + h(m.id) + '" data-search="' + h(pickerNormalize([m.name, m.apiModelId, m.provider].join(' '))) + '" aria-pressed="' + on + '"' + workspaceAct('cmpToggle', m.id) + '>' + workspaceModelRow(m, true) + '</button>';
+    }).join('') + '</div><div class="studio-empty" id="compareEmpty" hidden>مدلی با این عبارت پیدا نشد.</div><div class="studio-compare-footer"><span>حداقل دو مدل انتخاب کن</span><button class="btn pri" id="cmpRunBtn" onclick="runCompare()"' + (selected.length < 2 ? ' disabled' : '') + '>' + pxIcon('playground', 17) + 'شروع مقایسه</button></div></div><div id="cmpout" class="mt12"></div>';
+};
+window.filterCmpChips = function (query) {
+  const text = pickerNormalize(query).trim(); let visible = 0;
+  document.querySelectorAll('.cmp-chip').forEach(function (row) { row.hidden = !row.dataset.search.includes(text); if (!row.hidden) visible++; });
+  const empty = document.getElementById('compareEmpty'); if (empty) empty.hidden = visible > 0;
+};
+window.cmpToggle = function (id) {
+  const selected = S.cache.cmpSel || [];
+  const index = selected.indexOf(id);
+  if (index >= 0) selected.splice(index, 1);
+  else { if (selected.length >= 5) return toast('حداکثر ۵ مدل انتخاب کن', 'warn'); selected.push(id); }
+  S.cache.cmpSel = selected;
+  document.querySelectorAll('.cmp-chip').forEach(function (row) { const on = selected.includes(row.dataset.id); row.classList.toggle('on', on); row.setAttribute('aria-pressed', String(on)); });
+  document.getElementById('cmpSelCount').textContent = n(selected.length) + ' از ۵ مدل';
+  document.getElementById('cmpRunBtn').disabled = selected.length < 2;
+};
+
+let workspaceChoice = null;
+function closeWorkspaceChoice(focus) {
+  if (!workspaceChoice) return;
+  const choice = workspaceChoice; workspaceChoice = null;
+  choice.overlay.remove(); choice.app.inert = choice.wasInert;
+  choice.sheets.forEach(function (item) { item.element.inert = item.inert; });
+  document.removeEventListener('keydown', workspaceChoiceKeys, true);
+  window.removeEventListener('hashchange', workspaceChoiceRouteChange);
+  if (window.visualViewport) { visualViewport.removeEventListener('resize', choice.resize); visualViewport.removeEventListener('scroll', choice.resize); }
+  choice.trigger.setAttribute('aria-expanded', 'false');
+  if (focus !== false && choice.trigger.isConnected) choice.trigger.focus({ preventScroll: true });
+}
+window.closeWorkspaceChoice = closeWorkspaceChoice;
+function workspaceChoiceRouteChange() { closeWorkspaceChoice(false); }
+function workspaceChoiceKeys(e) {
+  if (!workspaceChoice) return;
+  const overlay = workspaceChoice.overlay;
+  if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); closeWorkspaceChoice(); return; }
+  const focusable = Array.from(overlay.querySelectorAll('button:not([disabled]),input')).filter(function (el) { return !el.hidden && el.getClientRects().length; });
+  if (e.key === 'Tab') {
+    const i = focusable.indexOf(document.activeElement);
+    if (e.shiftKey && i <= 0) { e.preventDefault(); focusable[focusable.length - 1].focus(); }
+    else if (!e.shiftKey && (i < 0 || i === focusable.length - 1)) { e.preventDefault(); focusable[0].focus(); }
+  }
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    const options = Array.from(overlay.querySelectorAll('[data-choice-index]:not([disabled])'));
+    if (!options.length) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    const i = options.indexOf(document.activeElement);
+    const next = i < 0 ? (e.key === 'ArrowDown' ? 0 : options.length - 1) : (i + (e.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length;
+    options[next].focus(); options[next].scrollIntoView({ block: 'nearest' });
+  }
+}
+function paintWorkspaceChoices(query) {
+  const text = pickerNormalize(query).trim(); let count = 0;
+  const choice = workspaceChoice;
+  const rows = choice.options.map(function (option, index) {
+    if (!pickerNormalize(option.text + ' ' + (option.dataset.detail || '')).includes(text)) return '';
+    count++;
+    const label = option.text.split(' · ');
+    const isSelected = option.value === choice.select.value;
+    return '<button type="button" class="model-option' + (isSelected ? ' is-selected' : '') + '" data-choice-index="' + index + '" aria-pressed="' + isSelected + '"' + (option.disabled ? ' disabled' : '') + '>' + pickerMark(label[1] || label[0]) + '<span class="model-option-copy"><bdi class="model-option-name">' + h(label[0]) + '</bdi><bdi class="model-option-id">' + h(option.dataset.detail || label.slice(1).join(' · ') || 'انتخاب خودکار') + '</bdi></span><span class="model-option-check">' + (isSelected ? pxIcon('check', 15) : '') + '</span></button>';
+  }).join('');
+  choice.overlay.querySelector('.model-picker-results').innerHTML = rows || '<div class="model-picker-empty"><strong>نتیجه‌ای پیدا نشد</strong><p>عبارت کوتاه‌تری را امتحان کن.</p></div>';
+  choice.overlay.querySelector('[role="status"]').textContent = n(count) + ' گزینه';
+}
+function openWorkspaceChoice(select, trigger, label) {
+  if (workspaceChoice || select.disabled) return;
+  const overlay = document.createElement('div'); overlay.className = 'model-picker-overlay studio-choice-overlay'; overlay.id = 'workspaceChoiceOverlay';
+  overlay.innerHTML = '<section class="model-picker studio-choice" role="dialog" aria-modal="true" aria-labelledby="workspaceChoiceTitle"><div class="model-picker-handle"></div><header class="model-picker-header"><div><span class="model-picker-eyebrow">PIMX / SELECT</span><h2 id="workspaceChoiceTitle">' + h(label) + '</h2></div><button class="model-picker-close" data-choice-close aria-label="بستن انتخاب‌گر">' + pxIcon('close', 18) + '</button></header><div class="model-picker-search">' + pxIcon('search', 19) + '<input type="search" aria-label="جستجوی گزینه‌ها" placeholder="جستجو در همهٔ گزینه‌ها…" autocomplete="off"></div><div class="model-picker-summary"><span role="status" aria-live="polite"></span><span>انتخاب فعلی با تیک مشخص شده</span></div><div class="model-picker-results"></div><footer class="model-picker-footer">نام کامل گزینه‌ها را ببین و انتخاب کن.</footer></section>';
+  const app = document.getElementById('app');
+  workspaceChoice = { select: select, trigger: trigger, options: Array.from(select.options), overlay: overlay, app: app, wasInert: app.inert, sheets: Array.from(document.querySelectorAll('.modal-overlay')).map(function (element) { return { element: element, inert: element.inert }; }) };
+  workspaceChoice.sheets.forEach(function (item) { item.element.inert = true; });
+  app.inert = true; trigger.setAttribute('aria-expanded', 'true'); document.body.appendChild(overlay);
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay || e.target.closest('[data-choice-close]')) return closeWorkspaceChoice();
+    const row = e.target.closest('[data-choice-index]'); if (!row || row.disabled) return;
+    const choice = workspaceChoice;
+    choice.select.value = choice.options[Number(row.dataset.choiceIndex)].value;
+    closeWorkspaceChoice();
+    choice.select.dispatchEvent(new Event('input', { bubbles: true }));
+    choice.select.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  const input = overlay.querySelector('input'); input.oninput = function () { paintWorkspaceChoices(input.value); };
+  document.addEventListener('keydown', workspaceChoiceKeys, true); window.addEventListener('hashchange', workspaceChoiceRouteChange);
+  workspaceChoice.resize = function () { if (window.visualViewport) { overlay.style.setProperty('--picker-viewport', visualViewport.height + 'px'); overlay.style.setProperty('--picker-offset', visualViewport.offsetTop + 'px'); overlay.classList.toggle('is-compact', visualViewport.height <= 550); } };
+  if (window.visualViewport) { visualViewport.addEventListener('resize', workspaceChoice.resize); visualViewport.addEventListener('scroll', workspaceChoice.resize); workspaceChoice.resize(); }
+  paintWorkspaceChoices(''); input.focus({ preventScroll: true });
+}
+function enhanceWorkspaceSelects(root) {
+  root.querySelectorAll('select:not([data-studio-select])').forEach(function (select) {
+    if (!select.id) select.id = 'studioSelect' + Math.random().toString(36).slice(2);
+    const field = select.closest('.fld,.input-group') || select.parentElement;
+    const label = field.querySelector('label');
+    const titles = { pgm: 'انتخاب مدل آزمایشگاه', trTool: 'انتخاب ابزار', r_def: 'انتخاب مدل پیش‌فرض' };
+    const title = titles[select.id] || (label ? label.textContent.replace('*', '').trim() : 'انتخاب گزینه');
+    const trigger = document.createElement('button'); trigger.type = 'button'; trigger.className = 'studio-select-trigger'; trigger.id = select.id + 'Trigger'; trigger.setAttribute('aria-haspopup', 'dialog'); trigger.setAttribute('aria-expanded', 'false');
+    select.dataset.studioSelect = '1'; select.classList.add('studio-native-select'); select.tabIndex = -1; select.setAttribute('aria-hidden', 'true');
+    select.after(trigger); if (label) label.htmlFor = trigger.id;
+    const sync = function () {
+      const option = select.selectedOptions[0]; const parts = option ? option.text.split(' · ') : ['گزینه‌ای موجود نیست'];
+      trigger.disabled = select.disabled || !select.options.length; trigger.setAttribute('aria-label', title + '، ' + (option ? option.text : ''));
+      trigger.innerHTML = '<span class="studio-select-icon">' + pxIcon(select.id === 'trTool' ? 'tools' : 'models', 20) + '</span><span class="studio-select-copy"><bdi>' + h(parts[0]) + '</bdi><small>' + h(parts.slice(1).join(' · ') || 'برای انتخاب کلیک کن') + '</small></span><span class="studio-select-chevron">⌄</span>';
+    };
+    select.addEventListener('change', sync); sync(); trigger.onclick = function () { openWorkspaceChoice(select, trigger, title); };
+  });
+}
+const WORKSPACE_ROUTES = ['models', 'model', 'council', 'playground', 'compare', 'tools', 'routing', 'settings'];
+WORKSPACE_ROUTES.forEach(function (route) {
+  const prev = window.AFTER[route];
+  window.AFTER[route] = async function () {
+    if (prev) await prev();
+    const root = document.getElementById('view'); if (!root || S.route !== route) return;
+    root.classList.add('workspace-view'); root.dataset.workspace = route;
+    const pageHead = root.querySelector('.ph');
+    if (pageHead && !pageHead.classList.contains('studio-page-head')) {
+      pageHead.classList.add('studio-page-head');
+      pageHead.insertAdjacentHTML('afterbegin', '<div class="studio-page-icon">' + pxIcon(route === 'model' ? 'models' : route, 24) + '</div>');
+      const title = pageHead.querySelector('h2');
+      const names = { council: 'شورای هوش مصنوعی', playground: 'آزمایشگاه مدل‌ها', tools: 'ابزارها و MCP', routing: 'مسیریابی هوشمند', settings: 'تنظیمات فضای کار' };
+      if (title && names[route]) title.textContent = names[route];
+    }
+    if (route === 'model') {
+      const actions = { modelTest: ['تست مدل', 'playground'], modelBench: ['سنجش عملکرد', 'compare'], modelEdit: ['ویرایش', 'prompts'], modelFav: ['نشان‌کردن', 'pin'], delEntity: ['حذف', 'trash'] };
+      root.querySelectorAll('.ph-a button').forEach(function (button) {
+        const onclick = button.getAttribute('onclick') || '';
+        const key = Object.keys(actions).find(function (key) { return onclick.includes(key + '('); });
+        if (key) { const value = actions[key]; button.innerHTML = pxIcon(value[1], 16) + '<span>' + value[0] + '</span>'; button.setAttribute('aria-label', value[0]); }
+      });
+      const crumb = root.querySelector('.ph-t > button'); if (crumb) { crumb.textContent = 'کتابخانهٔ مدل‌ها'; crumb.classList.add('studio-breadcrumb'); }
+    }
+    enhanceWorkspaceSelects(root);
+    root.querySelectorAll('.fld,.input-group').forEach(function (field) { const control = field.querySelector('textarea,input'); const label = field.querySelector('label'); if (label && control && control.id) label.htmlFor = control.id; });
+    root.querySelectorAll('button[title]:not([aria-label])').forEach(function (button) { button.setAttribute('aria-label', button.title); });
+    const translations = { 'AI Council': 'شورای هوش مصنوعی', '▶ Playground': 'آزمایشگاه مدل‌ها', 'Tools & MCP': 'ابزارها و MCP', 'Request': 'درخواست تو', 'Response': 'پاسخ مدل', 'Mode': 'شیوهٔ همکاری', 'Rounds': 'تعداد دور', 'Model': 'انتخاب مدل', 'Tool': 'انتخاب ابزار', 'System Prompt': 'دستور سیستمی', 'Prompt': 'پرامپت', 'Max Tokens': 'حداکثر توکن', 'Temperature': 'خلاقیت مدل', 'Arguments (JSON)': 'ورودی ابزار (JSON)', 'Overview': 'نمای کلی', 'Capabilities': 'قابلیت‌ها', 'Tests': 'تست‌ها', 'Benchmarks': 'بنچمارک', 'History': 'تاریخچه', 'Templates': 'قالب‌ها', 'Configs': 'تنظیمات', 'Score': 'امتیاز', 'Latency': 'زمان پاسخ', 'Requests': 'درخواست‌ها', 'Cost': 'هزینه', 'Independent': 'مستقل', 'Debate': 'مناظره', 'Panel': 'پنل تخصصی', 'Judge': 'داوری', 'Iterative': 'بهبود مرحله‌ای' };
+    root.querySelectorAll('h2,.card-t,label,.tabs button,.seg button,.stat-box .lbl span').forEach(function (el) {
+      Array.from(el.childNodes).forEach(function (node) { if (node.nodeType === 3 && translations[node.textContent.trim()]) node.textContent = translations[node.textContent.trim()]; });
+    });
+    const councilPicker = document.getElementById('cnlPicker');
+    if (councilPicker) {
+      if (!document.getElementById('councilModelSearch')) {
+        councilPicker.insertAdjacentHTML('beforebegin', '<div class="studio-search studio-council-search">' + pxIcon('search', 18) + '<input type="search" id="councilModelSearch" aria-label="جستجوی مدل‌های شورا" placeholder="جستجوی مدل یا پروایدر…"></div>');
+        document.getElementById('councilModelSearch').oninput = function () { const query = pickerNormalize(this.value); councilPicker.querySelectorAll('.pick').forEach(function (row) { row.hidden = !pickerNormalize(row.textContent).includes(query); }); };
+      }
+      councilPicker.querySelectorAll('.pick').forEach(function (row) { row.setAttribute('aria-pressed', String(row.classList.contains('on'))); });
+    }
+  };
+});
+// Sheets are created outside #view (including the default-model settings).
+new MutationObserver(function (mutations) {
+  if (!mutations.some(function (m) { return m.addedNodes.length; })) return;
+  const sheetRoot = document.getElementById('sheetOverlay'); if (sheetRoot) enhanceWorkspaceSelects(sheetRoot);
+}).observe(document.body, { childList: true, subtree: true });
+`;

@@ -64,6 +64,21 @@ Provider presets are configuration shortcuts. The Mini App registry starts with 
 
 Screenshots use the isolated local preview with fictional account and provider data.
 
+<details>
+<summary>Explore the redesigned model library, council and selectors</summary>
+
+| Model library | Model details | AI council |
+|:---:|:---:|:---:|
+| <img src="assets/readme/model-library.png" width="260" alt="Model library with readable cards and labeled actions" /> | <img src="assets/readme/model-details.png" width="260" alt="Model details with metrics and tabs" /> | <img src="assets/readme/council.png" width="260" alt="Council configuration with collaboration modes" /> |
+
+| Playground | Comparison | Searchable tools |
+|:---:|:---:|:---:|
+| <img src="assets/readme/playground.png" width="260" alt="Model playground request form" /> | <img src="assets/readme/comparison.png" width="260" alt="Model comparison with selected rows" /> | <img src="assets/readme/tool-picker.png" width="260" alt="Searchable tool selection dialog" /> |
+
+Model, default-model and tool selectors support search, full names, keyboard navigation and mobile bottom sheets. The model library provides labeled actions, a grouped bulk menu and search empty states.
+
+</details>
+
 <a id="getting-started"></a>
 
 ## 🚀 Getting started

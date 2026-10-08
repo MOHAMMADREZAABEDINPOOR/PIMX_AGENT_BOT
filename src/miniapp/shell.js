@@ -96,6 +96,8 @@ let NAV_INDEX = -1;
 let TG_BACK_BUTTON = null;
 
 function goBack() {
+  if (document.getElementById("workspaceChoiceOverlay")) { window.closeWorkspaceChoice(); return; }
+  if (document.getElementById("modelPickerOverlay")) { window.closeModelPicker(); return; }
   if (document.getElementById("sheetOverlay")) { window.closeSheet(); return; }
   if (document.getElementById("palOverlay")) { window.closePalette(); return; }
   if (S.navOpen) { closeNav(); return; }
@@ -350,7 +352,7 @@ async function render() {
     const html = await fn();
     if (token !== RENDERING) return;
     const v = document.getElementById("view");
-    if (v) { v.innerHTML = html; v.removeAttribute("aria-busy"); }
+    if (v) { v.classList.remove('workspace-view'); delete v.dataset.workspace; v.innerHTML = html; v.removeAttribute("aria-busy"); }
     if (window.AFTER && window.AFTER[S.route]) {
       try { await window.AFTER[S.route](); } catch (e) { console.warn("[AFTER]", e); }
     }

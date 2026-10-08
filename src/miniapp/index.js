@@ -11,6 +11,7 @@ import { VIEW_HOME } from "./views-home.js";
 import { VIEWS_POLISH } from "./views-polish.js";
 import { VIEWS_PERSONAL } from "./views-personal.js";
 import { MODEL_PICKER } from "./model-picker.js";
+import { WORKSPACE_JS } from "./workspace.js";
 
 // ترتیب مهم است: Shell قبل از UI Kit میآید تا Kit نسخهٔ ارتقایافتهٔ
 // کامپوننتها (Toast/Sheet/Palette/States) را روی همان نامهای عمومی بنشاند.
@@ -23,7 +24,8 @@ export const APP_JS = [
   VIEWS_POLISH,
   UI_KIT,
   VIEWS_PERSONAL,
-  MODEL_PICKER
+  MODEL_PICKER,
+  WORKSPACE_JS
 ].join("\n");
 
 
