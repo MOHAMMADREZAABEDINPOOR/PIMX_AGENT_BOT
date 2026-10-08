@@ -117,6 +117,23 @@ Bindingهای میزبانی: **`DB`** برای D1 و **`BOT_KV`** برای KV. 
 
 ## 🌍 استقرار روی Cloudflare
 
+### دیپلوی خودکار از گیت‌هاب
+
+[ورک‌فلو دیپلوی](.github/workflows/deploy.yml) با پوش و Pull Request روی `main`، بررسی سینتکس، تست‌های بک‌اند، تست مرورگر در موبایل و دسکتاپ و بیلد ورکر را اجرا می‌کند. بعد از موفقیت تست‌های پوش روی `main`، ورکر فعلی دیپلوی می‌شود. Pull Request فقط تست می‌شود؛ اگر کامیت جدیدتری روی `main` آمده باشد، دیپلوی کامیت قدیمی انجام نمی‌شود.
+
+در **Settings → Secrets and variables → Actions** یک‌بار این دو مقدار را تنظیم کن:
+
+| نوع | نام | مقدار |
+|:---|:---|:---|
+| Repository secret | `CLOUDFLARE_API_TOKEN` | توکن Cloudflare با قالب **Edit Cloudflare Workers** و دسترسی محدود به اکانت پروژه |
+| Repository variable | `CLOUDFLARE_ACCOUNT_ID` | شناسهٔ اکانت Cloudflare |
+
+متغیر شناسهٔ اکانت در این ریپازیتوری تنظیم شده است. فعال‌شدن دیپلوی خودکار به سکرت توکن نیاز دارد؛ ورود محلی Wrangler این دسترسی را به گیت‌هاب منتقل نمی‌کند. دیتابیس D1، فضای KV و سکرت‌های ورکر را یک‌بار آماده کن. دیپلوی متغیرها و سکرت‌های فعلی را نگه می‌دارد و وبهوک تلگرام یا دیتابیس را دوباره ایجاد نمی‌کند.
+
+وضعیت اجراها و دیپلوی دستی در [GitHub Actions](https://github.com/MOHAMMADREZAABEDINPOOR/PIMX_AGENT_BOT/actions/workflows/deploy.yml) در دسترس است. اگر تست‌ها شکست بخورند، ورکر روی نسخهٔ قبلی باقی می‌ماند.
+
+### راه‌اندازی اولیه و دیپلوی محلی
+
 ```bash
 npm run login
 npx wrangler kv namespace create BOT_KV

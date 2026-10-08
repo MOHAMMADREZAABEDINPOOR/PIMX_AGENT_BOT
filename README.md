@@ -117,6 +117,23 @@ The Mini App verifies Telegram's signed `initData`, creates a session and encryp
 
 ## 🌍 Deploy to Cloudflare
 
+### Automatic deployment from GitHub
+
+The [deployment workflow](.github/workflows/deploy.yml) runs syntax checks, backend tests, mobile/desktop browser tests and a Worker build on pushes and pull requests to `main`. A successful push to `main` then deploys the existing Worker. Pull requests only run checks; older commits are skipped if a newer commit has reached `main`.
+
+Configure **Settings → Secrets and variables → Actions** once:
+
+| Type | Name | Value |
+|:---|:---|:---|
+| Repository secret | `CLOUDFLARE_API_TOKEN` | Cloudflare **Edit Cloudflare Workers** API token restricted to the deployment account |
+| Repository variable | `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account ID |
+
+The deployment account variable is already configured for this repository. Automatic deployment requires the API token secret; a local Wrangler login does not provide GitHub with that credential. Provision D1, KV and Worker secrets once before enabling deployments. Existing dashboard variables and Worker secrets are retained; the workflow does not reset the Telegram webhook or recreate the database.
+
+Follow runs or trigger a manual deployment in [GitHub Actions](https://github.com/MOHAMMADREZAABEDINPOOR/PIMX_AGENT_BOT/actions/workflows/deploy.yml). If checks fail, the running Worker stays on its previous version.
+
+### Initial setup / local deployment
+
 ```bash
 npm run login
 npx wrangler kv namespace create BOT_KV
