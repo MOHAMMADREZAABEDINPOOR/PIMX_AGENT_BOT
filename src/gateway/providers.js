@@ -1,3 +1,4 @@
+import { pxText, pxTemplate } from '../i18n/server.js';
 // ─────────────────────────────────────────────
 // 🏭 Provider Registry
 // افزودن/ویرایش/حذف پروایدر + مدیریت چند کلید + آمار سلامت
@@ -128,13 +129,13 @@ function autoProviderName(baseUrl) {
 
 export function normalizeBaseUrl(url) {
   let u = String(url || "").trim();
-  if (!u) throw new Error("Base URL خالی است");
+  if (!u) throw new Error(pxText("Base URL خالی است"));
   if (!/^https?:\/\//i.test(u)) u = "https://" + u;
   u = u.replace(/\/+$/, "");
   // حذف مسیرهای اضافه رایج که کاربر اشتباهی پیست میکند
   u = u.replace(/\/(chat\/completions|completions|models)$/i, "");
   const parsed = new URL(u);
-  if (!parsed.hostname.includes(".")) throw new Error("دامنه نامعتبر است");
+  if (!parsed.hostname.includes(".")) throw new Error(pxText("دامنه نامعتبر است"));
   return parsed.origin + parsed.pathname.replace(/\/+$/, "");
 }
 
@@ -284,7 +285,7 @@ function sanitizeHeaders(h) {
 
 export async function updateProvider(env, id, patch, userId = 0) {
   const p = await getProvider(env, id);
-  if (!p) throw new Error("پروایدر یافت نشد");
+  if (!p) throw new Error(pxText("پروایدر یافت نشد"));
   if (patch.baseUrl) p.baseUrl = normalizeBaseUrl(patch.baseUrl);
   if (patch.name !== undefined) p.name = String(patch.name).slice(0, 60);
   if (patch.format && API_FORMATS[patch.format]) p.format = patch.format;
@@ -317,7 +318,7 @@ export async function updateProvider(env, id, patch, userId = 0) {
 
 export async function removeProviderKey(env, id, keyId, userId = 0) {
   const p = await getProvider(env, id);
-  if (!p) throw new Error("پروایدر یافت نشد");
+  if (!p) throw new Error(pxText("پروایدر یافت نشد"));
   p.keys = (p.keys || []).filter(k => k.id !== keyId);
   await saveProvider(env, p);
   await audit(env, { userId, action: "provider.key.delete", resource: id, meta: { keyId } });
@@ -559,7 +560,7 @@ export function renderNameTemplate(template, n, total) {
 
 export async function bulkCreateProviders(env, { baseUrl, keys, nameTemplate, format = "openai", auth = "bearer", headers, tags }, userId = 0) {
   const list = Array.isArray(keys) ? dedupe(keys) : parseKeys(keys);
-  if (!list.length) throw new Error("هیچ کلید معتبری پیدا نشد");
+  if (!list.length) throw new Error(pxText("هیچ کلید معتبری پیدا نشد"));
   const created = [];
   for (let i = 0; i < list.length; i++) {
     const name = renderNameTemplate(nameTemplate, i + 1, list.length);

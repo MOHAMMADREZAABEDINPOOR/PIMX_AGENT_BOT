@@ -1,3 +1,4 @@
+import { pxText, pxTemplate } from '../i18n/server.js';
 // ─────────────────────────────────────────────
 // AI Council — multi-model independent / debate / judge / panel / iterative
 // Real model calls only. Failures do not abort the whole council.
@@ -10,12 +11,12 @@ import { callChat } from "./client.js";
 import { selectModels } from "./router.js";
 
 export const COUNCIL_MODES = {
-  auto: { label: "خودکار", desc: "تحلیل هوشمند و تعیین بهترین پیکربندی" },
-  independent: { label: "مستقل", desc: "هر مدل جداگانه پاسخ میدهد، سپس سنتز" },
-  debate: { label: "مناظره", desc: "پاسخ → نقد متقابل → سنتز" },
-  panel: { label: "پنل متخصص", desc: "نقشهای تخصصی روی مدلهای مختلف" },
-  judge: { label: "داور", desc: "پاسخ مستقل + داوری و برنده" },
-  iterative: { label: "تکراری", desc: "چند دور نقد و بازنگری سپس داوری" }
+  auto: { get label(){return pxText("خودکار")}, get desc(){return pxText("تحلیل هوشمند و تعیین بهترین پیکربندی")} },
+  independent: { get label(){return pxText("مستقل")}, get desc(){return pxText("هر مدل جداگانه پاسخ میدهد، سپس سنتز")} },
+  debate: { get label(){return pxText("مناظره")}, get desc(){return pxText("پاسخ → نقد متقابل → سنتز")} },
+  panel: { get label(){return pxText("پنل متخصص")}, get desc(){return pxText("نقشهای تخصصی روی مدلهای مختلف")} },
+  judge: { get label(){return pxText("داور")}, get desc(){return pxText("پاسخ مستقل + داوری و برنده")} },
+  iterative: { get label(){return pxText("تکراری")}, get desc(){return pxText("چند دور نقد و بازنگری سپس داوری")} }
 };
 
 export const PANEL_ROLES = [
@@ -215,12 +216,12 @@ async function synthesize(env, { question, answers, mode, judgeModel, onProgress
   const okAnswers = answers.filter(a => a.ok && a.text);
   if (!okAnswers.length) {
     return {
-      final: "هیچ مدلی پاسخ معتبری نداد.",
+      final: pxText("هیچ مدلی پاسخ معتبری نداد."),
       consensus: "none",
       confidence: 0,
       agreement: 0,
       strong: [],
-      disagreements: ["همه فراخوانیها ناموفق بودند"],
+      disagreements: [pxText("همه فراخوانیها ناموفق بودند")],
       winner: null,
       judge: null,
       quality: {
@@ -237,7 +238,7 @@ async function synthesize(env, { question, answers, mode, judgeModel, onProgress
       consensus: "single",
       confidence: 55,
       agreement: 100,
-      strong: ["تنها پاسخ موفق"],
+      strong: [pxText("تنها پاسخ موفق")],
       disagreements: [],
       winner: okAnswers[0].displayName,
       judge: null,
@@ -316,7 +317,7 @@ Quality metrics:
       confidence: 40,
       agreement: Math.round(100 / okAnswers.length),
       strong: [],
-      disagreements: ["داور ناموفق — بهترین پاسخ موجود برگردانده شد"],
+      disagreements: [pxText("داور ناموفق — بهترین پاسخ موجود برگردانده شد")],
       winner: best.displayName,
       judge: null,
       judgeError: String(e.message || e),
@@ -493,7 +494,7 @@ async function calculateQualityMetrics(env, answers, synthesis) {
  */
 export async function runCouncil(env, opts = {}) {
   const question = String(opts.question || opts.goal || "").trim();
-  if (!question) throw new Error("سوال Council خالی است");
+  if (!question) throw new Error(pxText("سوال Council خالی است"));
 
   // Phase 12: Auto mode support
   let mode = opts.mode;
@@ -601,7 +602,7 @@ export async function runCouncil(env, opts = {}) {
     task: opts.task || (mode === "panel" ? "reasoning" : "chat"),
     ensureDiversity: ensureDiversity !== undefined ? ensureDiversity : true
   });
-  if (models.length < 2) throw new Error("حداقل ۲ مدل سالم برای Council لازم است. ابتدا پروایدر/مدل اضافه و تست کنید.");
+  if (models.length < 2) throw new Error(pxText("حداقل ۲ مدل سالم برای Council لازم است. ابتدا پروایدر/مدل اضافه و تست کنید."));
 
   // Phase 12: Auto-select judge model if planned
   let judgeModel = null;
@@ -834,7 +835,7 @@ export async function estimateCouncil(env, opts = {}) {
     models: models.map(m => ({ id: m.id, name: m.displayName || m.apiModelId, provider: m.providerName, status: m.status })),
     modelCalls: calls,
     diversity, // Provider diversity metrics
-    note: "برآورد تقریبی — هزینه واقعی بعد از اجرا ثبت میشود",
+    note: pxText("برآورد تقریبی — هزینه واقعی بعد از اجرا ثبت میشود"),
     available: models.length
   };
 }

@@ -3,6 +3,7 @@
 // یک لایه واحد برای فراخوانی هر پروایدر (OpenAI-compatible / Gemini / Anthropic)
 // ─────────────────────────────────────────────
 import { API_FORMATS, authHeaders, buildUrl, pickKey, recordProviderCall } from "./providers.js";
+import { languageMessages } from '../i18n/server.js';
 
 const DEFAULT_TIMEOUT = 45000;
 
@@ -159,6 +160,7 @@ function usageOf(provider, obj) {
 
 // فراخوانی چت روی یک پروایدر مشخص. onChunk → استریم
 export async function callChat(env, provider, model, messages, opts = {}) {
+  messages = languageMessages(messages);
   const { plain: key, entry } = await pickKey(env, provider);
   const stream = !!opts.onChunk;
   const path = chatPath(provider, model, stream);

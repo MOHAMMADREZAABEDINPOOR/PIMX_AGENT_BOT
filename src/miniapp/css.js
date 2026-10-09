@@ -535,6 +535,21 @@ html[dir="rtl"] @keyframes bootBar{0%{transform:translateX(100%)}100%{transform:
 }
 .seg-btn:hover{color:#fff;background:rgba(255,255,255,0.06)}
 .seg-btn.on{background:var(--grad);color:#fff;font-weight:750;box-shadow:0 2px 10px rgba(99,102,241,0.35)}
+/* English layouts use logical alignment; content keeps its own direction. */
+.language-toggle{font:700 11px/1 var(--font);min-width:30px}
+html[dir="ltr"] .head-back svg{transform:rotate(180deg)}
+html[dir="ltr"] .model-trigger-copy,html[dir="ltr"] .model-trigger-copy>bdi,
+html[dir="ltr"] .model-option-name,html[dir="ltr"] .model-option-id{text-align:left}
+html[dir="ltr"] .model-picker-search input{direction:ltr}
+html[dir="ltr"] .workspace-choice-search input{direction:ltr}
+html[dir="ltr"] .tool-arrow{left:auto;right:16px}
+html[dir="ltr"] .carry-icon{left:auto;right:25px}
+html[dir="ltr"] .hero-models button svg,html[dir="ltr"] .studio-send svg,
+html[dir="ltr"] .tool-arrow svg,html[dir="ltr"] .recent-chat>svg,
+html[dir="ltr"] .carry-card button svg{transform:rotate(180deg)}
+html[dir="ltr"] input:not([dir]),html[dir="ltr"] textarea:not([dir]){direction:ltr;text-align:start}
+html[dir="ltr"] select.select{background-position:right 12px center}
+@media(max-width:400px){.head-actions{gap:2px}.head-actions .btn-icon{width:30px;min-width:30px}.head-t .sub{max-width:145px}}
 select.select{
   appearance:none;-webkit-appearance:none;
   background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%237d8ba7' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");

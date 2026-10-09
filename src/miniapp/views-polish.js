@@ -49,7 +49,7 @@ export const VIEWS_POLISH = String.raw`
       var txt = (b.textContent || "").trim();
       if (txt) return;
       var t = b.getAttribute("title");
-      b.setAttribute("aria-label", t || "اقدام");
+      b.setAttribute("aria-label", t || pxText("اقدام"));
     });
   }
 

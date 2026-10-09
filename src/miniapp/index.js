@@ -1,4 +1,5 @@
 import { CSS } from "./css.js";
+import { pxTemplate } from '../i18n/server.js';
 import { APP_LIB } from "./lib.js";
 import { UI_KIT } from "../ui/kit.js";
 import { themeInitScript } from "../ui/theme.js";
@@ -12,10 +13,12 @@ import { VIEWS_POLISH } from "./views-polish.js";
 import { VIEWS_PERSONAL } from "./views-personal.js";
 import { MODEL_PICKER } from "./model-picker.js";
 import { WORKSPACE_JS } from "./workspace.js";
+import { APP_I18N } from './i18n.js';
 
 // ترتیب مهم است: Shell قبل از UI Kit میآید تا Kit نسخهٔ ارتقایافتهٔ
 // کامپوننتها (Toast/Sheet/Palette/States) را روی همان نامهای عمومی بنشاند.
 export const APP_JS = [
+  APP_I18N,
   themeInitScript(),
   APP_LIB,
   VIEWS_CORE, VIEWS_GATEWAY, VIEWS_AGENTS, VIEWS_OPS,
@@ -30,7 +33,7 @@ export const APP_JS = [
 
 
 export function miniAppHtml() {
-  return `<!DOCTYPE html>
+  return pxTemplate`<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="utf-8">

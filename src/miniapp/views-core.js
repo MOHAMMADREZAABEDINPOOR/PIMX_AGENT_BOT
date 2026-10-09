@@ -4,51 +4,51 @@ async function viewHome() {
   const d = await api("/dashboard");
   const s = d.snapshot || {}, t = (d.usage && d.usage.totals) || {}, ser = (d.usage && d.usage.series) || [];
   const hour = new Date().getHours();
-  const greet = hour < 5 ? "شب بخیر" : hour < 12 ? "صبح بخیر" : hour < 18 ? "عصر بخیر" : "شب بخیر";
+  const greet = hour < 5 ? pxText("شب بخیر") : hour < 12 ? pxText("صبح بخیر") : hour < 18 ? pxText("عصر بخیر") : pxText("شب بخیر");
   const name = userLabel();
   const errRate = t.requests ? (t.errors / t.requests) * 100 : 0;
   const provHealth = s.providers ? (s.providersHealthy / s.providers) * 100 : 0;
   const modHealth = s.models ? (s.modelsHealthy / s.models) * 100 : 0;
   const head = '<div class="ph"><div class="ph-t"><div class="row gap12" style="margin-bottom:2px">' +
     avatarHtml(44) +
-    '<div class="sp"><h2 style="font-size:19px">' + greet + (name ? "، " + h(name) : "") + "</h2>" +
-    '<p style="margin-top:1px">نمای کلی پلتفرم · ' + rel(s.ts) + "</p></div></div></div>" +
+    '<div class="sp"><h2 style="font-size:19px">' + greet + (name ? pxText("، ") + h(name) : "") + "</h2>" +
+    pxText('<p style="margin-top:1px">نمای کلی پلتفرم · ') + rel(s.ts) + "</p></div></div></div>" +
     '<div class="ph-a"><button class="btn sm gho"' + act("healthSweep") + ">◍ Health Sweep</button>" +
-    '<button class="btn sm gho"' + act("hardRefresh") + ">↻ تازهسازی</button></div></div>";
+    '<button class="btn sm gho"' + act("hardRefresh") + pxText(">↻ تازهسازی</button></div></div>");
 
   if (!s.providers) {
     return head +
       '<div class="card"><div class="empty">' +
-      '<i class="ei">▣</i><div class="et">به PIMXAGENT خوش آمدید</div>' +
-      '<div class="es">برای شروع یک Provider اضافه کنید. کافیست Base URL و API Key بدهید؛ مدلها خودکار کشف و تست میشوند و بعد میتوانید چت، Council و Agent را اجرا کنید.</div>' +
+      pxText('<i class="ei">▣</i><div class="et">به PIMXAGENT خوش آمدید</div>') +
+      pxText('<div class="es">برای شروع یک Provider اضافه کنید. کافیست Base URL و API Key بدهید؛ مدلها خودکار کشف و تست میشوند و بعد میتوانید چت، Council و Agent را اجرا کنید.</div>') +
       '<div class="row wrap" style="justify-content:center;margin-top:14px">' +
-      '<button class="btn pri"' + act("providerPresets") + ">◈ انتخاب از Presets</button>" +
-      '<button class="btn gho"' + act("providerNew") + ">＋ افزودن دستی</button>" +
+      '<button class="btn pri"' + act("providerPresets") + pxText(">◈ انتخاب از Presets</button>") +
+      '<button class="btn gho"' + act("providerNew") + pxText(">＋ افزودن دستی</button>") +
       "</div></div></div>" +
       card({
-        title: "بعد از افزودن Provider چه کاری میتوانید بکنید؟", icon: "ⓘ", cls: "mt12",
-        body: kv("Chat", "گفتگو با هر مدل، با streaming") +
-          kv("AI Council", "چند مدل همزمان روی یک سوال") +
-          kv("Agents", "اجرای خودکار با ابزار و حافظه") +
-          kv("Routing", "انتخاب هوشمند مدل بر اساس کیفیت/سرعت/هزینه") +
-          kv("Monitoring", "سلامت، مصرف و هزینه")
+        title: pxText("بعد از افزودن Provider چه کاری میتوانید بکنید؟"), icon: "ⓘ", cls: "mt12",
+        body: kv("Chat", pxText("گفتگو با هر مدل، با streaming")) +
+          kv("AI Council", pxText("چند مدل همزمان روی یک سوال")) +
+          kv("Agents", pxText("اجرای خودکار با ابزار و حافظه")) +
+          kv("Routing", pxText("انتخاب هوشمند مدل بر اساس کیفیت/سرعت/هزینه")) +
+          kv("Monitoring", pxText("سلامت، مصرف و هزینه"))
       });
   }
 
   const stats = '<div class="g g4 mb16">' +
     stat({
       label: "Providers", icon: "▣", value: n(s.providersHealthy) + " / " + n(s.providers),
-      sub: '<span class="dot ' + (provHealth > 70 ? "ok" : provHealth > 30 ? "warn" : "err") + '"></span> ' + pct(provHealth) + " سالم",
+      sub: '<span class="dot ' + (provHealth > 70 ? "ok" : provHealth > 30 ? "warn" : "err") + '"></span> ' + pct(provHealth) + pxText(" سالم"),
       meter: provHealth, meterKind: provHealth > 70 ? "ok" : provHealth > 30 ? "warn" : "bad"
     }) +
     stat({
       label: "Models", icon: "◆", value: n(s.modelsHealthy) + " / " + n(s.models),
-      sub: (s.modelsFailed ? n(s.modelsFailed) + " failed" : "همه سالم"),
+      sub: (s.modelsFailed ? n(s.modelsFailed) + " failed" : pxText("همه سالم")),
       meter: modHealth, meterKind: modHealth > 70 ? "ok" : modHealth > 30 ? "warn" : "bad"
     }) +
     stat({
       label: "Requests (7d)", icon: "↗", value: n(t.requests),
-      sub: (errRate > 0 ? '<span style="color:var(--bad)">' + pct(errRate) + " error</span>" : "بدون خطا"),
+      sub: (errRate > 0 ? '<span style="color:var(--bad)">' + pct(errRate) + " error</span>" : pxText("بدون خطا")),
       spark: ser.map(function (x) { return x.requests || 0; })
     }) +
     stat({
@@ -59,9 +59,9 @@ async function viewHome() {
     "</div>";
 
   const quick = card({
-    title: "شروع سریع", icon: "⚡",
+    title: pxText("شروع سریع"), icon: "⚡",
     body: '<div class="row wrap">' +
-      '<button class="btn pri"' + act("newChat") + ">＋ چت جدید</button>" +
+      '<button class="btn pri"' + act("newChat") + pxText(">＋ چت جدید</button>") +
       '<button class="btn"' + act("go", "council") + ">⚡ AI Council</button>" +
       '<button class="btn"' + act("providerNew") + ">＋ Provider</button>" +
       '<button class="btn gho"' + act("go", "models") + ">◆ Models</button>" +
@@ -71,8 +71,8 @@ async function viewHome() {
   });
 
   const provList = card({
-    title: "Providers", sub: n(s.providers) + " مورد", icon: "▣",
-    actions: '<button class="btn sm gho"' + act("go", "providers") + ">همه ›</button>",
+    title: "Providers", sub: n(s.providers) + pxText(" مورد"), icon: "▣",
+    actions: '<button class="btn sm gho"' + act("go", "providers") + pxText(">همه ›</button>"),
     flat: true,
     body: lst((d.providers || []).slice(0, 6).map(function (p) {
       return li({
@@ -82,11 +82,11 @@ async function viewHome() {
         end: '<span class="tny mono">' + (p.successRate === null || p.successRate === undefined ? "—" : pct(p.successRate)) + "</span>",
         chev: true
       });
-    }), { icon: "▣", title: "هیچ Provider ثبت نشده", sub: "برای شروع یک Provider اضافه کنید", btn: { t: "＋ افزودن Provider", on: act("providerNew") } })
+    }), { icon: "▣", title: pxText("هیچ Provider ثبت نشده"), sub: pxText("برای شروع یک Provider اضافه کنید"), btn: { t: pxText("＋ افزودن Provider"), on: act("providerNew") } })
   });
 
   const failures = (d.failures || []).length ? card({
-    title: "مدلهای Failed", sub: n(d.failures.length) + " مورد", icon: "✕",
+    title: pxText("مدلهای Failed"), sub: n(d.failures.length) + pxText(" مورد"), icon: "✕",
     flat: true, cls: "mt12",
     body: lst(d.failures.slice(0, 6).map(function (m) {
       return li({
@@ -100,7 +100,7 @@ async function viewHome() {
 
   const runs = card({
     title: "Agent Runs", icon: "◈", flat: true,
-    actions: '<button class="btn sm gho"' + act("go", "runs") + ">همه ›</button>",
+    actions: '<button class="btn sm gho"' + act("go", "runs") + pxText(">همه ›</button>"),
     body: lst((d.recentRuns || []).slice(0, 5).map(function (r) {
       return li({
         onclick: act("go", "run", r.id),
@@ -108,29 +108,29 @@ async function viewHome() {
         sub: h(short(r.goal, 46)),
         end: statusBdg(r.status) + '<span class="tny">' + rel(r.startedAt) + "</span>", chev: true
       });
-    }), { icon: "◈", title: "اجرایی ثبت نشده", sub: "یک Agent اجرا کنید" })
+    }), { icon: "◈", title: pxText("اجرایی ثبت نشده"), sub: pxText("یک Agent اجرا کنید") })
   });
 
   const alerts = card({
     title: "Alerts", icon: "◔", flat: true, cls: "mt12",
-    actions: '<button class="btn sm gho"' + act("go", "alerts") + ">مدیریت ›</button>",
+    actions: '<button class="btn sm gho"' + act("go", "alerts") + pxText(">مدیریت ›</button>"),
     body: lst((d.alerts || []).slice(0, 5).map(function (a) {
       return li({
         icon: "!", title: bdg(a.type, "warn"),
         sub: h(short(String(a.message || "").replace(/<[^>]+>/g, ""), 70)),
         end: '<span class="tny">' + rel(a.ts) + "</span>"
       });
-    }), { icon: "◔", title: "هیچ هشداری نیست", sub: "سیستم پایدار است" })
+    }), { icon: "◔", title: pxText("هیچ هشداری نیست"), sub: pxText("سیستم پایدار است") })
   });
 
   const autos = (d.automations || []).length ? card({
     title: "Scheduled Tasks", icon: "◷", flat: true, cls: "mt12",
-    actions: '<button class="btn sm gho"' + act("go", "automation") + ">همه ›</button>",
+    actions: '<button class="btn sm gho"' + act("go", "automation") + pxText(">همه ›</button>"),
     body: lst(d.automations.slice(0, 5).map(function (a) {
       return li({
         onclick: act("go", "automation"),
         title: h(a.name), sub: '<span class="mono ltr">' + h(a.cron) + "</span>",
-        end: '<span class="tny">' + (a.lastRun ? rel(a.lastRun) : "اجرا نشده") + "</span>"
+        end: '<span class="tny">' + (a.lastRun ? rel(a.lastRun) : pxText("اجرا نشده")) + "</span>"
       });
     }))
   }) : "";
@@ -140,10 +140,10 @@ async function viewHome() {
 }
 
 window.healthSweep = async function () {
-  toast("Health sweep شروع شد…");
+  toast(pxText("Health sweep شروع شد…"));
   try {
     const r = await api("/monitoring/sweep", { body: { batch: 8 }, long: true });
-    toast("تست شد: " + n(r.tested) + " · سالم: " + n(r.healthy), "ok");
+    toast(pxText("تست شد: ") + n(r.tested) + pxText(" · سالم: ") + n(r.healthy), "ok");
     bust(); render();
   } catch (e) { toast(e.message, "err"); }
 };
@@ -153,7 +153,7 @@ async function viewChat() {
   const initial = await Promise.all([usableModels(), convList(), cached('preferences', function () { return api('/preferences'); }).catch(function () { return { responseMode: 'speed' }; })]);
   const models = initial[0];
   S.preferences = initial[2];
-  if (!models.length) return setupGate("چت");
+  if (!models.length) return setupGate(pxText("چت"));
 
   const convs = initial[1];
 
@@ -178,25 +178,25 @@ async function viewChat() {
     return '<div class="citem ' + (S.chat.id === c.id ? "on" : "") + '" data-id="' + h(c.id) + '"' + act("openConv", c.id) + ">" +
       '<div class="row gap4">' +
       '<div class="sp" style="min-width:0">' +
-      '<div class="t trunc">' + (c.pinned ? "📌 " : "") + h(c.title || "گفتگو") + "</div>" +
-      '<div class="s trunc">' + (c.count ? n(c.count) + " پیام · " : "") + h(short(c.preview, 26) || "خالی") + "</div>" +
+      '<div class="t trunc">' + (c.pinned ? "📌 " : "") + h(c.title || pxText("گفتگو")) + "</div>" +
+      '<div class="s trunc">' + (c.count ? n(c.count) + pxText(" پیام · ") : "") + h(short(c.preview, 26) || pxText("خالی")) + "</div>" +
       "</div>" +
-      '<button class="ibtn cmore"' + act("convMenu", c.id, c.title || "گفتگو") + ' title="options">⋯</button>' +
+      '<button class="ibtn cmore"' + act("convMenu", c.id, c.title || pxText("گفتگو")) + ' title="options">⋯</button>' +
       "</div></div>";
-  }).join("") : '<div class="empty" style="padding:22px 10px"><div class="es">گفتگویی نیست</div></div>';
+  }).join("") : pxText('<div class="empty" style="padding:22px 10px"><div class="es">گفتگویی نیست</div></div>');
 
   return '<section class="cmain">' +
     '<div class="cbar">' +
-    '<button class="ibtn ctoggle' + (S.chat.sideOpen ? " on" : "") + '"' + act("toggleChatSide") + ' aria-label="گفتگوهای قبلی">' + pxIcon('menu') + '</button>' +
+    '<button class="ibtn ctoggle' + (S.chat.sideOpen ? " on" : "") + '"' + act("toggleChatSide") + pxText(' aria-label="گفتگوهای قبلی">') + pxIcon('menu') + '</button>' +
     chatModelTriggerHtml(models) +
-    '<button class="ibtn"' + act("newChat") + ' aria-label="گفتگوی جدید">＋</button>' +
+    '<button class="ibtn"' + act("newChat") + pxText(' aria-label="گفتگوی جدید">＋</button>') +
     (S.chat.id ? '<button class="ibtn"' + act("renameConv") + ' title="rename">✎</button>' +
       '<button class="ibtn"' + act("delConv") + ' title="delete">🗑</button>' : "") +
-    '<div class="response-switch chat-response-switch" aria-label="حالت پاسخ">' + responseModesHtml() + '</div></div>' +
+    pxText('<div class="response-switch chat-response-switch" aria-label="حالت پاسخ">') + responseModesHtml() + '</div></div>' +
     '<div class="cwrap">' +
     '<aside class="cside' + (S.chat.sideOpen ? " mob" : "") + '" id="cside">' +
     '<div class="cside-h"><div class="row gap4">' +
-    '<button class="btn pri sm sp"' + act("newChat") + ">＋ گفتگوی جدید</button>" +
+    '<button class="btn pri sm sp"' + act("newChat") + pxText(">＋ گفتگوی جدید</button>") +
     ((convs || []).length ? '<button class="ibtn" ' + act("wipeChats").trim() + ' title="delete all">🗑</button>' : "") +
     "</div></div>" +
     '<div class="cside-l">' + sideList + "</div></aside>" +
@@ -204,9 +204,9 @@ async function viewChat() {
     '<div class="cbody">' +
     '<div class="msgs" id="msgs">' + renderMsgs() + "</div>" +
     '<div class="comp"><div class="comp-in">' +
-    '<textarea id="cinput" aria-label="پیام به دستیار" rows="1" placeholder="پیام خود را بنویسید…"></textarea>' +
-    '<button class="btn pri ico" id="csend" aria-label="ارسال پیام"' + act("sendChat") + '>' + pxIcon('arrow') + '</button></div>' +
-    '<div class="comp-hint">Enter ارسال · Shift+Enter خط جدید</div></div>' +
+    pxText('<textarea id="cinput" aria-label="پیام به دستیار" rows="1" placeholder="پیام خود را بنویسید…"></textarea>') +
+    pxText('<button class="btn pri ico" id="csend" aria-label="ارسال پیام"') + act("sendChat") + '>' + pxIcon('arrow') + '</button></div>' +
+    pxText('<div class="comp-hint">Enter ارسال · Shift+Enter خط جدید</div></div>') +
     "</div></div></section>";
 }
 
@@ -252,11 +252,11 @@ window.hasProviders = hasProviders;
 function setupGate(what) {
   return '<div class="card"><div class="empty">' +
     '<i class="ei">▣</i>' +
-    '<div class="et">برای استفاده از ' + h(what) + ' اول یک Provider اضافه کنید</div>' +
-    '<div class="es">هیچ مدل فعالی موجود نیست. یک Provider (مثل OpenAI، OpenRouter، Gemini) با API Key خودتان اضافه کنید؛ مدلها بهصورت خودکار کشف میشوند.</div>' +
+    pxText('<div class="et">برای استفاده از ') + h(what) + pxText(' اول یک Provider اضافه کنید</div>') +
+    pxText('<div class="es">هیچ مدل فعالی موجود نیست. یک Provider (مثل OpenAI، OpenRouter، Gemini) با API Key خودتان اضافه کنید؛ مدلها بهصورت خودکار کشف میشوند.</div>') +
     '<div class="row wrap" style="justify-content:center;margin-top:14px">' +
-    '<button class="btn pri"' + act("providerNew") + ">＋ افزودن Provider</button>" +
-    '<button class="btn gho"' + act("providerPresets") + ">◈ Presets آماده</button>" +
+    '<button class="btn pri"' + act("providerNew") + pxText(">＋ افزودن Provider</button>") +
+    '<button class="btn gho"' + act("providerPresets") + pxText(">◈ Presets آماده</button>") +
     "</div></div></div>";
 }
 window.setupGate = setupGate;
@@ -268,7 +268,7 @@ function modelOptsHtml(models) {
     if (!groups[p]) groups[p] = [];
     groups[p].push(m);
   });
-  let out = '<option value="">Auto (انتخاب هوشمند)</option>';
+  let out = pxText('<option value="">Auto (انتخاب هوشمند)</option>');
   Object.keys(groups).sort().forEach(function (p) {
     out += '<optgroup label="' + h(p) + '">';
     groups[p].slice(0, 80).forEach(function (m) {
@@ -298,7 +298,7 @@ window.msgAvatar = msgAvatar; window.msgAvatarFallback = msgAvatarFallback;
 function renderMsgs() {
   const msgs = S.chat.messages || [];
   if (!msgs.length) {
-    return '<div class="chat-welcome"><span class="chat-welcome-symbol">' + pxIcon('spark', 34) + '</span><h2>از کجا شروع کنیم؟</h2><p>یک پیام بنویس. مدل مناسب را خودکار انتخاب می‌کنم، یا خودت انتخاب کن.</p><div class="prompt-chips"><button onclick="fillChatPrompt(\'کمکم کن یک ایده تازه بسازم\')">یک ایده تازه</button><button onclick="fillChatPrompt(\'این موضوع را ساده توضیح بده: \')">ساده توضیح بده</button><button onclick="fillChatPrompt(\'در نوشتن و بهتر کردن این متن کمکم کن: \')">کمک در نوشتن</button></div></div>';
+    return '<div class="chat-welcome"><span class="chat-welcome-symbol">' + pxIcon('spark', 34) + pxText('</span><h2>از کجا شروع کنیم؟</h2><p>یک پیام بنویس. مدل مناسب را خودکار انتخاب می‌کنم، یا خودت انتخاب کن.</p><div class="prompt-chips"><button onclick="fillChatPrompt(\'کمکم کن یک ایده تازه بسازم\')">یک ایده تازه</button><button onclick="fillChatPrompt(\'این موضوع را ساده توضیح بده: \')">ساده توضیح بده</button><button onclick="fillChatPrompt(\'در نوشتن و بهتر کردن این متن کمکم کن: \')">کمک در نوشتن</button></div></div>');
   }
   return msgs.map(function (m, i) {
     const isU = m.role === "user";
@@ -312,14 +312,14 @@ function renderMsgs() {
         (m.cost ? "<span>" + usd(m.cost) + "</span>" : "") +
         (m.tokens ? "<span>" + n(m.tokens.total || m.tokens) + " tok</span>" : "") +
         (m.cached ? "<span>⚡ cached</span>" : "") +
-        '<button class="btn sm gho" style="height:20px;padding:0 7px;font-size:9.5px"' + act("copyMsg", String(i)) + ">کپی</button>" +
+        '<button class="btn sm gho" style="height:20px;padding:0 7px;font-size:9.5px"' + act("copyMsg", String(i)) + pxText(">کپی</button>") +
         "</div>" : "") +
       (m.note ? '<div class="stream-note">' + h(m.note) + '</div>' : '') + "</div></div>";
   }).join("");
 }
 window.copyMsg = function (i) {
   const m = S.chat.messages[Number(i)];
-  if (m && navigator.clipboard) navigator.clipboard.writeText(m.content || "").then(function () { toast("کپی شد", "ok"); });
+  if (m && navigator.clipboard) navigator.clipboard.writeText(m.content || "").then(function () { toast(pxText("کپی شد"), "ok"); });
 };
 function paintMsgs() {
   const box = document.getElementById("msgs");
@@ -331,7 +331,7 @@ window.fillChatPrompt = function (text) { const input = document.getElementById(
 window.AFTER = window.AFTER || {};
 window.AFTER.chat = function () {
   const send = document.getElementById('csend');
-  if (send && S.chat.sending) { send.classList.add('stopping'); send.setAttribute('aria-label', 'توقف پاسخ'); send.innerHTML = '■'; }
+  if (send && S.chat.sending) { send.classList.add('stopping'); send.setAttribute('aria-label', pxText('توقف پاسخ')); send.innerHTML = '■'; }
   const ta = document.getElementById("cinput");
   if (ta) {
     ta.onkeydown = function (e) {
@@ -362,12 +362,12 @@ function setChatSide(open) {
 window.setChatSide = setChatSide;
 
 window.newChat = async function () {
-  if (S.chat.sending) { toast('پاسخ را متوقف کن یا منتظر پایان آن بمان.', 'warn'); return; }
+  if (S.chat.sending) { toast(pxText('پاسخ را متوقف کن یا منتظر پایان آن بمان.'), 'warn'); return; }
   if (S.chat.creating) return;
   S.chat.creating = true;
   try {
     // Server reuses the newest empty conversation, so repeat taps never pile up blanks.
-    const c = await api("/conversations", { body: { title: "گفتگوی جدید" } });
+    const c = await api("/conversations", { body: { title: pxText("گفتگوی جدید") } });
     if (S.deadConvs && S.deadConvs[c.id]) delete S.deadConvs[c.id];
     bust("convs");
     S.chat.id = c.id; S.chat.loadedId = c.id; S.chat.messages = c.messages || [];
@@ -380,18 +380,18 @@ window.newChat = async function () {
     setTimeout(function () { S.chat.creating = false; }, 700);
   }
 };
-window.openConv = function (id) { if (S.chat.sending) { toast('پاسخ را متوقف کن یا منتظر پایان آن بمان.', 'warn'); return; } S.chat.sideOpen = false; go("chat", { id: id }); };
+window.openConv = function (id) { if (S.chat.sending) { toast(pxText('پاسخ را متوقف کن یا منتظر پایان آن بمان.'), 'warn'); return; } S.chat.sideOpen = false; go("chat", { id: id }); };
 window.convMenu = function (id, title) {
   sheet({
-    title: short(title, 34), sub: "مدیریت گفتگو", cls: "narrow",
+    title: short(title, 34), sub: pxText("مدیریت گفتگو"), cls: "narrow",
     body: lst([
-      li({ icon: "▸", onclick: act("openConv2", id), title: "باز کردن", chev: true }),
-      li({ icon: "✎", onclick: act("convRename", id, title), title: "تغییر نام", chev: true }),
-      li({ icon: "📌", onclick: act("convPin", id), title: "پین / برداشتن پین", chev: true }),
-      li({ icon: "🧹", onclick: act("convClear", id), title: "پاک کردن پیامها", chev: true }),
-      li({ icon: "🗑", onclick: act("convDelete", id), title: "حذف گفتگو", chev: true })
+      li({ icon: "▸", onclick: act("openConv2", id), title: pxText("باز کردن"), chev: true }),
+      li({ icon: "✎", onclick: act("convRename", id, title), title: pxText("تغییر نام"), chev: true }),
+      li({ icon: "📌", onclick: act("convPin", id), title: pxText("پین / برداشتن پین"), chev: true }),
+      li({ icon: "🧹", onclick: act("convClear", id), title: pxText("پاک کردن پیامها"), chev: true }),
+      li({ icon: "🗑", onclick: act("convDelete", id), title: pxText("حذف گفتگو"), chev: true })
     ]),
-    foot: '<button class="btn gho" onclick="closeSheet()">بستن</button>'
+    foot: pxText('<button class="btn gho" onclick="closeSheet()">بستن</button>')
   });
 };
 window.openConv2 = function (id) { closeSheet(); openConv(id); };
@@ -399,10 +399,10 @@ window.convRename = function (id, title) {
   closeSheet();
   setTimeout(function () {
     editSheet({
-      title: "تغییر نام گفتگو", cls: "narrow",
-      fields: [{ k: "title", l: "عنوان", req: true, v: title === "گفتگو" ? "" : title }],
+      title: pxText("تغییر نام گفتگو"), cls: "narrow",
+      fields: [{ k: "title", l: pxText("عنوان"), req: true, v: title === "گفتگو" ? "" : title }],
       onSave: async function (v) {
-        await doAct(function () { return api("/conversations/" + id, { method: "PATCH", body: { title: v.title } }); }, "ذخیره شد", { bust: "convs" });
+        await doAct(function () { return api("/conversations/" + id, { method: "PATCH", body: { title: v.title } }); }, pxText("ذخیره شد"), { bust: "convs" });
       }
     });
   }, 60);
@@ -412,23 +412,23 @@ window.convPin = async function (id) {
   try {
     const c = await api("/conversations/" + id);
     await api("/conversations/" + id, { method: "PATCH", body: { pinned: !c.pinned } });
-    bust("convs"); toast(!c.pinned ? "پین شد" : "پین برداشته شد", "ok"); render();
+    bust("convs"); toast(!c.pinned ? pxText("پین شد") : pxText("پین برداشته شد"), "ok"); render();
   } catch (e) { toast(e.message, "err"); }
 };
 window.convClear = function (id) {
   closeSheet();
   setTimeout(function () {
-    confirmSheet("پاک کردن پیامها؟", "همه پیامهای این گفتگو حذف میشود ولی گفتگو باقی میماند.", async function () {
+    confirmSheet(pxText("پاک کردن پیامها؟"), pxText("همه پیامهای این گفتگو حذف میشود ولی گفتگو باقی میماند."), async function () {
       await api("/conversations/" + id, { method: "PATCH", body: { clear: true } });
       if (S.chat.id === id) { S.chat.messages = []; S.chat.loadedId = null; }
-      bust("convs"); closeSheet(); render(); toast("پاک شد", "ok");
+      bust("convs"); closeSheet(); render(); toast(pxText("پاک شد"), "ok");
     });
   }, 60);
 };
 window.convDelete = function (id) {
   closeSheet();
   setTimeout(function () {
-    confirmSheet("حذف گفتگو؟", "این گفتگو و همه پیامهایش حذف میشود.", async function () {
+    confirmSheet(pxText("حذف گفتگو؟"), pxText("این گفتگو و همه پیامهایش حذف میشود."), async function () {
       try {
         await api("/conversations/" + id, { method: "DELETE" });
       } catch (e) {
@@ -439,7 +439,7 @@ window.convDelete = function (id) {
       dropConvLocal(id);
       if (S.chat.id === id) { S.chat.id = null; S.chat.loadedId = null; S.chat.messages = []; }
       closeSheet();
-      toast("حذف شد", "ok");
+      toast(pxText("حذف شد"), "ok");
       if (S.chat.id) render(); else go("chat");
     });
   }, 60);
@@ -465,14 +465,14 @@ async function convList() {
 }
 window.convList = convList;
 window.wipeChats = function () {
-  confirmSheet("حذف همه گفتگوها؟", "همه تاریخچه چت پاک میشود. این عملیات بازگشتپذیر نیست.", async function () {
+  confirmSheet(pxText("حذف همه گفتگوها؟"), pxText("همه تاریخچه چت پاک میشود. این عملیات بازگشتپذیر نیست."), async function () {
     try {
       const r = await api("/conversations/wipe", { body: {} });
       (S.cache.convs || []).forEach(function (c) { dropConvLocal(c.id); });
       S.cache.convs = [];
       S.chat.id = null; S.chat.loadedId = null; S.chat.messages = [];
       closeSheet();
-      toast(n(r.deleted) + " گفتگو حذف شد", "ok");
+      toast(n(r.deleted) + pxText(" گفتگو حذف شد"), "ok");
       go("chat");
     } catch (e) { toast(e.message, "err"); }
   });
@@ -488,7 +488,7 @@ window.pruneChats = async function () {
   try {
     const r = await api("/conversations/prune", { body: {} });
     bust("convs");
-    toast(r.pruned ? n(r.pruned) + " گفتگوی خالی حذف شد" : "گفتگوی خالی نبود", "ok");
+    toast(r.pruned ? n(r.pruned) + pxText(" گفتگوی خالی حذف شد") : pxText("گفتگوی خالی نبود"), "ok");
     render();
   } catch (e) { toast(e.message, "err"); }
 };
@@ -507,7 +507,7 @@ window.sendChat = async function () {
   const ai = S.chat.messages.length - 1;
   paintMsgs();
   const btn = document.getElementById("csend");
-  if (btn) { btn.disabled = false; btn.classList.add('stopping'); btn.setAttribute('aria-label', 'توقف پاسخ'); btn.innerHTML = '■'; }
+  if (btn) { btn.disabled = false; btn.classList.add('stopping'); btn.setAttribute('aria-label', pxText('توقف پاسخ')); btn.innerHTML = '■'; }
 
   const history = S.chat.messages
     .filter(function (m) { return m.content && m.role; })
@@ -560,25 +560,25 @@ window.sendChat = async function () {
           if (!S.chat.id && p.conversationId) { S.chat.id = p.conversationId; S.chat.loadedId = p.conversationId; }
         }
         else if (ev === 'done') finished = true;
-        else if (ev === "error") throw new Error(p.error || "خطای stream");
+        else if (ev === "error") throw new Error(p.error || pxText("خطای stream"));
       }
     }
-    if (!finished) throw new Error('ارتباط پیش از پایان پاسخ قطع شد.');
+    if (!finished) throw new Error(pxText('ارتباط پیش از پایان پاسخ قطع شد.'));
     S.chat.messages[ai] = {
-      role: "assistant", content: txt || "⚠ پاسخی دریافت نشد",
+      role: "assistant", content: txt || pxText("⚠ پاسخی دریافت نشد"),
       model: meta && meta.model, latency: meta && meta.latency,
       cost: meta && meta.cost, tokens: meta && meta.tokens
     };
     bust("convs");
   } catch (e) {
     const stopped = controller.signal.aborted && controller.signal.reason !== 'timeout';
-    S.chat.messages[ai] = { role: 'assistant', content: txt || (stopped ? 'پاسخ متوقف شد.' : '⚠ ' + (controller.signal.reason === 'timeout' ? 'زمان دریافت پاسخ تمام شد.' : e.message || e)), note: txt ? (stopped ? 'تولید پاسخ متوقف شد.' : 'ارتباط قطع شد؛ پاسخ تا اینجا نگه داشته شده است.') : '' };
+    S.chat.messages[ai] = { role: 'assistant', content: txt || (stopped ? pxText('پاسخ متوقف شد.') : '⚠ ' + (controller.signal.reason === 'timeout' ? pxText('زمان دریافت پاسخ تمام شد.') : e.message || e)), note: txt ? (stopped ? pxText('تولید پاسخ متوقف شد.') : pxText('ارتباط قطع شد؛ پاسخ تا اینجا نگه داشته شده است.')) : '' };
   } finally {
     clearTimeout(timeout);
     S.chat.controller = null;
     S.chat.sending = false;
     const b = document.getElementById("csend");
-    if (b) { b.disabled = false; b.classList.remove('stopping'); b.setAttribute('aria-label', 'ارسال پیام'); b.innerHTML = pxIcon('arrow'); }
+    if (b) { b.disabled = false; b.classList.remove('stopping'); b.setAttribute('aria-label', pxText('ارسال پیام')); b.innerHTML = pxIcon('arrow'); }
     paintMsgs();
   }
 };
@@ -587,8 +587,8 @@ window.sendChat = async function () {
 async function viewCouncil() {
   const tab = curTab("council", "run");
   const head = '<div class="ph"><div class="ph-t"><h2>⚡ AI Council</h2>' +
-    "<p>چند مدل بهصورت همزمان روی یک سوال کار میکنند و نتیجه ترکیب میشود</p></div></div>" +
-    tabsBar("council", [["run", "اجرا"], ["history", "History"], ["templates", "Templates"], ["configs", "Configs"]]);
+    pxText("<p>چند مدل بهصورت همزمان روی یک سوال کار میکنند و نتیجه ترکیب میشود</p></div></div>") +
+    tabsBar("council", [["run", pxText("اجرا")], ["history", "History"], ["templates", "Templates"], ["configs", "Configs"]]);
 
   if (tab === "history") return head + (await councilHistory());
   if (tab === "templates") return head + (await councilTemplates());
@@ -598,19 +598,19 @@ async function viewCouncil() {
   if (models.length < 2) {
     return head + (models.length === 0 ? setupGate("AI Council") :
       '<div class="card"><div class="empty"><i class="ei">⚡</i>' +
-      '<div class="et">حداقل ۲ مدل سالم لازم است</div>' +
-      '<div class="es">الان ' + n(models.length) + ' مدل قابل استفاده دارید. Provider دیگری اضافه کنید یا مدلهای بیشتری کشف/تست کنید.</div>' +
+      pxText('<div class="et">حداقل ۲ مدل سالم لازم است</div>') +
+      pxText('<div class="es">الان ') + n(models.length) + pxText(' مدل قابل استفاده دارید. Provider دیگری اضافه کنید یا مدلهای بیشتری کشف/تست کنید.</div>') +
       '<div class="row wrap" style="justify-content:center;margin-top:14px">' +
       '<button class="btn pri"' + act("providerNew") + ">＋ Provider</button>" +
       '<button class="btn gho"' + act("go", "models") + ">◆ Models</button></div></div></div>");
   }
 
   const MODES = [
-    ["independent", "Independent", "هر مدل مستقل پاسخ میدهد"],
-    ["debate", "Debate", "مدلها یکدیگر را نقد میکنند"],
-    ["panel", "Panel", "هر مدل نقش تخصصی دارد"],
-    ["judge", "Judge", "یک مدل داور بهترین را انتخاب میکند"],
-    ["iterative", "Iterative", "پاسخ در چند دور اصلاح میشود"]
+    ["independent", "Independent", pxText("هر مدل مستقل پاسخ میدهد")],
+    ["debate", "Debate", pxText("مدلها یکدیگر را نقد میکنند")],
+    ["panel", "Panel", pxText("هر مدل نقش تخصصی دارد")],
+    ["judge", "Judge", pxText("یک مدل داور بهترین را انتخاب میکند")],
+    ["iterative", "Iterative", pxText("پاسخ در چند دور اصلاح میشود")]
   ];
   const maxCount = Math.min(30, models.length);
   const picked = (S.council.modelIds || []).filter(function (id) {
@@ -620,13 +620,13 @@ async function viewCouncil() {
   if (S.council.count > maxCount) S.council.count = maxCount;
 
   const modelPicker =
-    '<div class="fld"><label>انتخاب مدل' +
-    (picked.length ? ' <span class="bdg acc">' + n(picked.length) + " انتخابشده</span>" : ' <span class="tny">(خالی = خودکار)</span>') +
+    pxText('<div class="fld"><label>انتخاب مدل') +
+    (picked.length ? ' <span class="bdg acc">' + n(picked.length) + pxText(" انتخابشده</span>") : pxText(' <span class="tny">(خالی = خودکار)</span>')) +
     "</label>" +
     '<div class="row wrap gap4 mb8">' +
-    '<button class="btn sm gho"' + act("cnlPickAll") + ">انتخاب همه</button>" +
-    '<button class="btn sm gho"' + act("cnlPickHealthy") + ">فقط سالمها</button>" +
-    (picked.length ? '<button class="btn sm gho"' + act("cnlPickNone") + ">پاک کردن</button>" : "") +
+    '<button class="btn sm gho"' + act("cnlPickAll") + pxText(">انتخاب همه</button>") +
+    '<button class="btn sm gho"' + act("cnlPickHealthy") + pxText(">فقط سالمها</button>") +
+    (picked.length ? '<button class="btn sm gho"' + act("cnlPickNone") + pxText(">پاک کردن</button>") : "") +
     "</div>" +
     '<div class="picker" id="cnlPicker">' +
     models.map(function (m) {
@@ -638,13 +638,13 @@ async function viewCouncil() {
         "</button>";
     }).join("") +
     "</div>" +
-    '<div class="hint">اگر چیزی انتخاب نکنید، سیستم خودکار ' + n(S.council.count || 3) + " مدل بهتر را انتخاب میکند.</div></div>";
+    pxText('<div class="hint">اگر چیزی انتخاب نکنید، سیستم خودکار ') + n(S.council.count || 3) + pxText(" مدل بهتر را انتخاب میکند.</div></div>");
 
   const form = card({
-    title: "پیکربندی اجرا", icon: "⚡",
+    title: pxText("پیکربندی اجرا"), icon: "⚡",
     body:
-      '<div class="fld"><label>سوال یا هدف<span class="req">*</span></label>' +
-      '<textarea id="cq" rows="4" placeholder="چه مسئلهای را میخواهید چند مدل با هم حل کنند؟">' + h(S.council.question) + "</textarea></div>" +
+      pxText('<div class="fld"><label>سوال یا هدف<span class="req">*</span></label>') +
+      pxText('<textarea id="cq" rows="4" placeholder="چه مسئلهای را میخواهید چند مدل با هم حل کنند؟">') + h(S.council.question) + "</textarea></div>" +
       '<div class="fld"><label>Mode</label><div class="seg">' +
       MODES.map(function (m) {
         return "<button" + (S.council.mode === m[0] ? ' class="on"' : "") + act("setCMode", m[0]) + ">" + h(m[1]) + "</button>";
@@ -652,14 +652,14 @@ async function viewCouncil() {
       '<div class="hint">' + h((MODES.filter(function (m) { return m[0] === S.council.mode; })[0] || MODES[0])[2]) + "</div></div>" +
       modelPicker +
       '<div class="inline-f">' +
-      '<div class="fld"><label>تعداد مدل</label><input type="number" id="cc" min="2" max="' + maxCount + '" value="' + (picked.length || S.council.count || 3) + '"' + (picked.length ? " disabled" : "") + '><div class="hint">' + (picked.length ? "بر اساس انتخاب دستی" : "حداکثر " + n(maxCount) + " مدل موجود") + "</div></div>" +
+      pxText('<div class="fld"><label>تعداد مدل</label><input type="number" id="cc" min="2" max="') + maxCount + '" value="' + (picked.length || S.council.count || 3) + '"' + (picked.length ? " disabled" : "") + '><div class="hint">' + (picked.length ? pxText("بر اساس انتخاب دستی") : pxText("حداکثر ") + n(maxCount) + pxText(" مدل موجود")) + "</div></div>" +
       '<div class="fld"><label>Rounds</label><input type="number" id="cr" min="1" max="5" value="' + (S.council.rounds || 2) + '"></div>' +
       "</div>" +
-      note("اگر مدلی fail شود اجرا متوقف نمیشود و بقیه ادامه میدهند."),
-    foot: '<button class="btn gho sm"' + act("councilEstimate") + ">برآورد هزینه</button>" +
+      note(pxText("اگر مدلی fail شود اجرا متوقف نمیشود و بقیه ادامه میدهند.")),
+    foot: '<button class="btn gho sm"' + act("councilEstimate") + pxText(">برآورد هزینه</button>") +
       '<div class="sp"></div>' +
       '<button class="btn pri" id="cgo"' + act("runCouncilUI") + (S.council.running ? " disabled" : "") + ">" +
-      (S.council.running ? '<span class="sp8"></span> در حال اجرا…' : "▶ START COUNCIL") + "</button>"
+      (S.council.running ? pxText('<span class="sp8"></span> در حال اجرا…') : "▶ START COUNCIL") + "</button>"
   });
 
   return head + form + (S.council.last ? councilResult(S.council.last) : "");
@@ -677,8 +677,8 @@ function paintPicker() {
   if (lab && lab.previousElementSibling) {
     const b = lab.parentElement.querySelector("label .bdg, label .tny");
     if (b) b.outerHTML = picked.length
-      ? '<span class="bdg acc">' + n(picked.length) + " انتخابشده</span>"
-      : '<span class="tny">(خالی = خودکار)</span>';
+      ? '<span class="bdg acc">' + n(picked.length) + pxText(" انتخابشده</span>")
+      : pxText('<span class="tny">(خالی = خودکار)</span>');
   }
 }
 window.cnlToggle = function (id) {
@@ -686,7 +686,7 @@ window.cnlToggle = function (id) {
   const sel = S.council.modelIds || [];
   const i = sel.indexOf(id);
   if (i >= 0) sel.splice(i, 1);
-  else { if (sel.length >= 30) return toast("حداکثر ۳۰ مدل", "warn"); sel.push(id); }
+  else { if (sel.length >= 30) return toast(pxText("حداکثر ۳۰ مدل"), "warn"); sel.push(id); }
   S.council.modelIds = sel;
   paintPicker();
 };
@@ -700,7 +700,7 @@ window.cnlPickHealthy = async function () {
   readCouncilForm();
   const list = await usableModels();
   const ok = list.filter(function (m) { return m.status === "healthy"; });
-  if (!ok.length) return toast("مدل سالمی موجود نیست — همه را انتخاب کنید یا اول تست بگیرید", "warn");
+  if (!ok.length) return toast(pxText("مدل سالمی موجود نیست — همه را انتخاب کنید یا اول تست بگیرید"), "warn");
   S.council.modelIds = ok.slice(0, 30).map(function (m) { return m.id; });
   render();
 };
@@ -712,8 +712,8 @@ function councilResult(r) {
   const answers = r.answers || [];
   return '<div class="mt16">' +
     card({
-      title: "نتیجه", icon: "◎", sub: r.mode + " · " + n(answers.length) + " model · " + ms(new Date(r.finishedAt) - new Date(r.startedAt)),
-      actions: '<button class="btn sm gho"' + act("copyText", "cnlFinal") + ">کپی پاسخ</button>",
+      title: pxText("نتیجه"), icon: "◎", sub: r.mode + " · " + n(answers.length) + " model · " + ms(new Date(r.finishedAt) - new Date(r.startedAt)),
+      actions: '<button class="btn sm gho"' + act("copyText", "cnlFinal") + pxText(">کپی پاسخ</button>"),
       body:
         '<div class="rings">' +
         ring(syn.agreement, "Agreement", syn.agreement > 70 ? "ok" : syn.agreement > 40 ? "warn" : "bad") +
@@ -727,11 +727,11 @@ function councilResult(r) {
         bdg(usd((r.totals || {}).cost), "mono") +
         "</div>" +
         '<div class="bub" id="cnlFinal" style="border:1px solid var(--line);background:var(--bg2)">' + md(syn.final || "") + "</div>" +
-        ((syn.strong || []).length ? '<h4 class="mt16 mb8">نقاط توافق</h4>' + (syn.strong || []).map(function (x) { return '<div class="tiny">✓ ' + h(x) + "</div>"; }).join("") : "") +
-        ((syn.disagreements || []).length ? '<h4 class="mt16 mb8">اختلاف نظر</h4>' + (syn.disagreements || []).map(function (x) { return '<div class="tiny">⚠ ' + h(x) + "</div>"; }).join("") : "")
+        ((syn.strong || []).length ? pxText('<h4 class="mt16 mb8">نقاط توافق</h4>') + (syn.strong || []).map(function (x) { return '<div class="tiny">✓ ' + h(x) + "</div>"; }).join("") : "") +
+        ((syn.disagreements || []).length ? pxText('<h4 class="mt16 mb8">اختلاف نظر</h4>') + (syn.disagreements || []).map(function (x) { return '<div class="tiny">⚠ ' + h(x) + "</div>"; }).join("") : "")
     }) +
     card({
-      title: "پاسخ هر مدل", icon: "◆", cls: "mt12", flat: true,
+      title: pxText("پاسخ هر مدل"), icon: "◆", cls: "mt12", flat: true,
       body: answers.map(function (a, i) {
         return '<div class="ans"><div class="ans-h"' + act("toggleAns", "ans" + i) + ">" +
           '<span class="dot ' + (a.ok ? "ok" : "err") + '"></span>' +
@@ -758,7 +758,7 @@ window.toggleAns = function (id) {
 };
 window.copyText = function (id) {
   const el = document.getElementById(id);
-  if (el && navigator.clipboard) navigator.clipboard.writeText(el.textContent || "").then(function () { toast("کپی شد", "ok"); });
+  if (el && navigator.clipboard) navigator.clipboard.writeText(el.textContent || "").then(function () { toast(pxText("کپی شد"), "ok"); });
 };
 window.setCMode = function (m) { readCouncilForm(); S.council.mode = m; render(); };
 function readCouncilForm() {
@@ -772,12 +772,12 @@ window.councilEstimate = async function () {
   try {
     const e = await api("/council/estimate", { body: councilBody() });
     sheet({
-      title: "برآورد اجرا", cls: "narrow",
-      body: kv("مدلهای موجود", n(e.available)) + kv("Model Calls", n(e.modelCalls)) +
+      title: pxText("برآورد اجرا"), cls: "narrow",
+      body: kv(pxText("مدلهای موجود"), n(e.available)) + kv("Model Calls", n(e.modelCalls)) +
         kv("Rounds", n(S.council.rounds)) +
-        kv("انتخاب", (S.council.modelIds || []).length ? "دستی (" + n(S.council.modelIds.length) + ")" : "خودکار") +
+        kv(pxText("انتخاب"), (S.council.modelIds || []).length ? pxText("دستی (") + n(S.council.modelIds.length) + ")" : pxText("خودکار")) +
         (e.diversity ? kv("Diversity", pct(e.diversity.diversityScore)) : "") +
-        '<h4 class="mt16 mb8">مدلهای انتخابی</h4>' +
+        pxText('<h4 class="mt16 mb8">مدلهای انتخابی</h4>') +
         (e.models || []).map(function (m) { return li({ title: h(m.name), sub: h(m.provider), end: statusBdg(m.status) }); }).join("") +
         (e.note ? note(h(e.note)) : "")
     });
@@ -797,17 +797,17 @@ function councilBody() {
 window.councilBody = councilBody;
 window.runCouncilUI = async function () {
   readCouncilForm();
-  if (!S.council.question.trim()) return toast("سوال را بنویسید", "err");
+  if (!S.council.question.trim()) return toast(pxText("سوال را بنویسید"), "err");
   const picked = S.council.modelIds || [];
-  if (picked.length === 1) return toast("حداقل ۲ مدل انتخاب کنید (یا انتخاب را پاک کنید)", "err");
+  if (picked.length === 1) return toast(pxText("حداقل ۲ مدل انتخاب کنید (یا انتخاب را پاک کنید)"), "err");
   S.council.running = true; render();
   try {
     const run = await api("/council/run", { long: true, timeout: 300000, body: councilBody() });
     S.council.last = run;
-    toast("Council کامل شد", "ok");
+    toast(pxText("Council کامل شد"), "ok");
   } catch (e) {
     if (e.data && e.data.needsApproval) {
-      toast("نیاز به تأیید هزینه: " + usd(e.data.estimatedCost), "warn");
+      toast(pxText("نیاز به تأیید هزینه: ") + usd(e.data.estimatedCost), "warn");
       S.council.running = false; render();
       return councilApprovalSheet(e.data);
     }
@@ -816,18 +816,18 @@ window.runCouncilUI = async function () {
 };
 function councilApprovalSheet(d) {
   sheet({
-    title: "تأیید هزینه لازم است", cls: "narrow",
-    body: note("هزینه برآوردی " + usd(d.estimatedCost) + " از بودجه بیشتر است.", "warn") +
+    title: pxText("تأیید هزینه لازم است"), cls: "narrow",
+    body: note(pxText("هزینه برآوردی ") + usd(d.estimatedCost) + pxText(" از بودجه بیشتر است."), "warn") +
       kv("Approval ID", '<span class="mono">' + h(d.approvalRequestId || "—") + "</span>") +
       (d.autoPlan ? kv("Complexity", n(d.autoPlan.complexity)) : ""),
-    okText: "رفتن به Approvals",
+    okText: pxText("رفتن به Approvals"),
     onOk: async function () { closeSheet(); go("approvals"); }
   });
 }
 async function councilHistory() {
   const runs = await api("/council/runs?limit=30");
   return card({
-    title: "اجراهای قبلی", sub: n((runs || []).length) + " مورد", flat: true,
+    title: pxText("اجراهای قبلی"), sub: n((runs || []).length) + pxText(" مورد"), flat: true,
     body: lst((runs || []).map(function (r) {
       return li({
         onclick: act("viewCouncilRun", r.id),
@@ -835,7 +835,7 @@ async function councilHistory() {
         sub: bdg(r.mode, "acc") + " " + n((r.models || []).length) + " model · " + rel(r.startedAt),
         end: statusBdg(r.status) + '<span class="tny mono">' + usd((r.totals || {}).cost) + "</span>", chev: true
       });
-    }), { icon: "⚡", title: "اجرایی ثبت نشده" })
+    }), { icon: "⚡", title: pxText("اجرایی ثبت نشده") })
   });
 }
 window.viewCouncilRun = async function (id) {
@@ -847,8 +847,8 @@ window.viewCouncilRun = async function (id) {
 async function councilTemplates() {
   const ts = await api("/council/templates");
   return card({
-    title: "Templates", sub: n((ts || []).length) + " مورد", flat: true,
-    actions: '<button class="btn sm pri"' + act("templateNew") + ">＋ جدید</button>",
+    title: "Templates", sub: n((ts || []).length) + pxText(" مورد"), flat: true,
+    actions: '<button class="btn sm pri"' + act("templateNew") + pxText(">＋ جدید</button>"),
     body: lst((ts || []).map(function (t) {
       return li({
         icon: t.icon || "⚙",
@@ -859,49 +859,49 @@ async function councilTemplates() {
           (t.isBuiltin ? "" : '<button class="btn sm gho"' + act("templateEdit", t.id) + ">✎</button>" +
             '<button class="btn sm dan"' + act("delEntity", "Template", "/council/templates/" + t.id) + ">🗑</button>")
       });
-    }), { icon: "⚙", title: "Template نداری", btn: { t: "＋ ساخت Template", on: act("templateNew") } })
+    }), { icon: "⚙", title: pxText("Template نداری"), btn: { t: pxText("＋ ساخت Template"), on: act("templateNew") } })
   });
 }
 function templateFields(t) {
   t = t || {};
   return [
-    { k: "name", l: "نام", req: true, v: t.name },
-    { k: "description", l: "توضیح", t: "area", rows: 2, v: t.description },
-    { k: "icon", l: "آیکون", v: t.icon || "⚙" },
+    { k: "name", l: pxText("نام"), req: true, v: t.name },
+    { k: "description", l: pxText("توضیح"), t: "area", rows: 2, v: t.description },
+    { k: "icon", l: pxText("آیکون"), v: t.icon || "⚙" },
     { k: "mode", l: "Mode", t: "select", v: t.mode || "judge", opts: [["independent", "Independent"], ["debate", "Debate"], ["panel", "Panel"], ["judge", "Judge"], ["iterative", "Iterative"]] },
     { t: "rowStart" },
-    { k: "count", l: "تعداد مدل", t: "num", v: t.count || 3, min: 2, max: 30 },
+    { k: "count", l: pxText("تعداد مدل"), t: "num", v: t.count || 3, min: 2, max: 30 },
     { k: "rounds", l: "Rounds", t: "num", v: t.rounds || 2, min: 1, max: 5 },
     { t: "rowEnd" },
     { k: "systemPrompt", l: "System Prompt", t: "area", rows: 3, v: t.systemPrompt },
-    { k: "ensureDiversity", l: "Ensure Diversity", t: "switch", v: t.ensureDiversity !== false, hint: "مدلها از Providerهای متفاوت انتخاب شوند" }
+    { k: "ensureDiversity", l: "Ensure Diversity", t: "switch", v: t.ensureDiversity !== false, hint: pxText("مدلها از Providerهای متفاوت انتخاب شوند") }
   ];
 }
 window.templateNew = function () {
   editSheet({
-    title: "Template جدید", fields: templateFields({}),
-    onSave: async function (v) { await doAct(function () { return api("/council/templates", { body: v }); }, "ساخته شد"); }
+    title: pxText("Template جدید"), fields: templateFields({}),
+    onSave: async function (v) { await doAct(function () { return api("/council/templates", { body: v }); }, pxText("ساخته شد")); }
   });
 };
 window.templateEdit = async function (id) {
   const t = await api("/council/templates/" + id);
   editSheet({
-    title: "ویرایش Template", sub: t.name, fields: templateFields(t),
-    onSave: async function (v) { await doAct(function () { return api("/council/templates/" + id, { method: "PATCH", body: v }); }, "ذخیره شد"); }
+    title: pxText("ویرایش Template"), sub: t.name, fields: templateFields(t),
+    onSave: async function (v) { await doAct(function () { return api("/council/templates/" + id, { method: "PATCH", body: v }); }, pxText("ذخیره شد")); }
   });
 };
 window.dupTemplate = async function (id) {
-  await doAct(function () { return api("/council/templates/" + id + "/duplicate", { body: {} }); }, "کپی شد");
+  await doAct(function () { return api("/council/templates/" + id + "/duplicate", { body: {} }); }, pxText("کپی شد"));
 };
 window.runTemplate = function (id) {
   editSheet({
-    title: "اجرای Template", cls: "narrow",
-    fields: [{ k: "question", l: "سوال", t: "area", rows: 4, req: true }],
-    okText: "▶ اجرا",
+    title: pxText("اجرای Template"), cls: "narrow",
+    fields: [{ k: "question", l: pxText("سوال"), t: "area", rows: 4, req: true }],
+    okText: pxText("▶ اجرا"),
     onSave: async function (v) {
-      closeSheet(); toast("در حال اجرا…");
+      closeSheet(); toast(pxText("در حال اجرا…"));
       const r = await api("/council/templates/" + id + "/run", { body: { question: v.question }, long: true, timeout: 300000 });
-      S.council.last = r; S.tab.council = "run"; render(); toast("کامل شد", "ok");
+      S.council.last = r; S.tab.council = "run"; render(); toast(pxText("کامل شد"), "ok");
     }
   });
 };
@@ -909,36 +909,36 @@ async function councilConfigs() {
   const cs = await api("/council/configs");
   return card({
     title: "Saved Configs", flat: true,
-    actions: '<button class="btn sm pri"' + act("configSave") + ">＋ ذخیره فعلی</button>",
+    actions: '<button class="btn sm pri"' + act("configSave") + pxText(">＋ ذخیره فعلی</button>"),
     body: lst((cs || []).map(function (c) {
       return li({
         title: h(c.name || "config"),
         sub: c.mode + " · " + n(c.count) + " model · " + n(c.rounds) + " rounds",
-        actions: '<button class="btn sm"' + act("configLoad", c.id, c.mode, String(c.count), String(c.rounds)) + ">بارگذاری</button>" +
+        actions: '<button class="btn sm"' + act("configLoad", c.id, c.mode, String(c.count), String(c.rounds)) + pxText(">بارگذاری</button>") +
           '<button class="btn sm dan"' + act("delEntity", "Config", "/council/configs/" + c.id) + ">🗑</button>"
       });
-    }), { icon: "⚙", title: "Config ذخیرهشدهای نیست" })
+    }), { icon: "⚙", title: pxText("Config ذخیرهشدهای نیست") })
   });
 }
 window.configSave = function () {
   editSheet({
-    title: "ذخیره Config", cls: "narrow",
-    fields: [{ k: "name", l: "نام", req: true, v: S.council.mode + "-" + S.council.count }],
+    title: pxText("ذخیره Config"), cls: "narrow",
+    fields: [{ k: "name", l: pxText("نام"), req: true, v: S.council.mode + "-" + S.council.count }],
     onSave: async function (v) {
       await doAct(function () {
         return api("/council/configs", { body: { name: v.name, mode: S.council.mode, count: S.council.count, rounds: S.council.rounds } });
-      }, "ذخیره شد");
+      }, pxText("ذخیره شد"));
     }
   });
 };
 window.configLoad = function (id, mode, count, rounds) {
   S.council.mode = mode; S.council.count = Number(count); S.council.rounds = Number(rounds);
-  S.tab.council = "run"; render(); toast("بارگذاری شد", "ok");
+  S.tab.council = "run"; render(); toast(pxText("بارگذاری شد"), "ok");
 };
 
 /* ═══════════ PLAYGROUND ═══════════ */
 async function viewPlayground() {
-  const head = '<div class="ph"><div class="ph-t"><h2>▶ Playground</h2><p>یک مدل را با پرامپت دلخواه تست کنید</p></div></div>';
+  const head = pxText('<div class="ph"><div class="ph-t"><h2>▶ Playground</h2><p>یک مدل را با پرامپت دلخواه تست کنید</p></div></div>');
   const models = await usableModels();
   if (!models.length) return head + setupGate("Playground");
   const opts = models.map(function (m) {
@@ -951,23 +951,23 @@ async function viewPlayground() {
       title: "Request", icon: "▶",
       body:
         '<div class="fld"><label>Model<span class="req">*</span></label><select id="pgm">' + opts + "</select></div>" +
-        '<div class="fld"><label>System Prompt</label><textarea id="pgs" rows="2" placeholder="اختیاری"></textarea></div>' +
+        pxText('<div class="fld"><label>System Prompt</label><textarea id="pgs" rows="2" placeholder="اختیاری"></textarea></div>') +
         '<div class="fld"><label>Prompt<span class="req">*</span></label><textarea id="pgp" rows="5">Reply with exactly: PIMX_OK</textarea></div>' +
         '<div class="inline-f">' +
         '<div class="fld"><label>Max Tokens</label><input type="number" id="pgt" value="500"></div>' +
         '<div class="fld"><label>Temperature</label><input type="number" id="pgtemp" value="0.7" step="0.1" min="0" max="2"></div>' +
         "</div>" +
         '<div class="fld"><label class="swt"><div><div class="sl">JSON Mode</div></div><input type="checkbox" id="pgj"><span class="swt-b"></span></label></div>',
-      foot: '<button class="btn pri full"' + act("runPlayground") + ">▶ اجرا</button>"
+      foot: '<button class="btn pri full"' + act("runPlayground") + pxText(">▶ اجرا</button>")
     }) +
-    '<div id="pgout">' + card({ title: "Response", icon: "◎", body: '<div class="empty" style="padding:28px"><div class="es">خروجی اینجا نمایش داده میشود</div></div>' }) + "</div>" +
+    '<div id="pgout">' + card({ title: "Response", icon: "◎", body: pxText('<div class="empty" style="padding:28px"><div class="es">خروجی اینجا نمایش داده میشود</div></div>') }) + "</div>" +
     "</div>";
 }
 window.runPlayground = async function () {
   const id = (document.getElementById("pgm") || {}).value;
-  if (!id) return toast("مدلی انتخاب نشده", "err");
+  if (!id) return toast(pxText("مدلی انتخاب نشده"), "err");
   const out = document.getElementById("pgout");
-  out.innerHTML = card({ title: "Response", body: loading("در حال اجرا…") });
+  out.innerHTML = card({ title: "Response", body: loading(pxText("در حال اجرا…")) });
   try {
     const r = await api("/models/" + id + "/run", {
       long: true,

@@ -15,7 +15,7 @@
 
 **Your models. Your memory. Your workspace — inside Telegram.**
 
-A personal AI workspace combining a Telegram bot, a Persian RTL Mini App and a multi-provider gateway on Cloudflare Workers. Chat with live responses, organize your knowledge, compare models and carry your conversations to another Telegram account.
+A personal AI workspace combining a Telegram bot, a bilingual Persian/English Mini App and a multi-provider gateway on Cloudflare Workers. Chat with live responses, organize your knowledge, compare models and carry your conversations to another Telegram account.
 
 [GitHub](https://github.com/MOHAMMADREZAABEDINPOOR/PIMX_AGENT_BOT) · [PIMX / Profile](https://github.com/MOHAMMADREZAABEDINPOOR) · [Static artwork](assets/readme/hero.png)
 
@@ -55,7 +55,8 @@ The original 3D artwork links a Telegram phone and paper plane to AI, API and st
 | 📚 Personal knowledge | Manage memory, documents, retrieval workflows, prompt templates and projects |
 | 🤝 Agents & operations | Configure agents, inspect runs, manage tools, automations, approvals and usage |
 | 💾 Portable data | Download an archive or send it to Telegram; confirm restoration into another account |
-| 🎨 Mini App | Persian RTL layout, persistent themes, desktop sidebar and mobile tabs |
+| Languages | [Persian + English](docs/LANGUAGES.md), saved account preferences, RTL/LTR layouts and a Mini App language toggle |
+| 🎨 Mini App | persistent themes, desktop sidebar and mobile tabs |
 | ↩️ Back navigation | Header and native Telegram BackButton, history-aware navigation and parent fallback for direct links |
 
 Provider presets are configuration shortcuts. The Mini App registry starts with the providers you add; provider credentials and supported capabilities determine which features are available.

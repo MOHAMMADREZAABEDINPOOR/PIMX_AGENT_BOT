@@ -1,3 +1,4 @@
+import { pxText, pxTemplate } from '../i18n/server.js';
 // ─────────────────────────────────────────────
 // 🩺 API Doctor — عیبیابی واقعی یک endpoint
 // ─────────────────────────────────────────────
@@ -20,7 +21,7 @@ export async function diagnose({ baseUrl, apiKey = "", format = "openai", auth =
   }
 
   const u = new URL(normalized);
-  if (u.protocol !== "https:") steps.push(step("TLS", false, "پروتکل https نیست — کلید روی http لو میرود"));
+  if (u.protocol !== "https:") steps.push(step("TLS", false, pxText("پروتکل https نیست — کلید روی http لو میرود")));
 
   const baseHeaders = { "Content-Type": "application/json", ...headers };
   if (format === "anthropic") { baseHeaders["x-api-key"] = apiKey; baseHeaders["anthropic-version"] = "2023-06-01"; }
@@ -33,12 +34,12 @@ export async function diagnose({ baseUrl, apiKey = "", format = "openai", auth =
   const root = await httpJson(withQuery("/"), { headers: baseHeaders, timeout: 12000 });
   if (root.status === 0) {
     const dnsFail = /fail|dns|resolve|enotfound/i.test(root.error || "");
-    steps.push(step("DNS/Network", false, root.error || "دسترسی ناموفق"));
-    steps.push(step("TLS", false, "چون اتصال برقرار نشد بررسی نشد"));
+    steps.push(step("DNS/Network", false, root.error || pxText("دسترسی ناموفق")));
+    steps.push(step("TLS", false, pxText("چون اتصال برقرار نشد بررسی نشد")));
     return finish(steps, normalized, null);
   }
   steps.push(step("DNS", true, u.hostname));
-  steps.push(step("TLS", u.protocol === "https:", u.protocol === "https:" ? "گواهی معتبر" : "بدون TLS"));
+  steps.push(step("TLS", u.protocol === "https:", u.protocol === "https:" ? pxText("گواهی معتبر") : pxText("بدون TLS")));
 
   // /models
   let modelsOk = false, discovered = 0, modelSample = [];
@@ -48,18 +49,18 @@ export async function diagnose({ baseUrl, apiKey = "", format = "openai", auth =
     modelsOk = Array.isArray(arr) && arr.length > 0;
     discovered = Array.isArray(arr) ? arr.length : 0;
     modelSample = (Array.isArray(arr) ? arr : []).slice(0, 5).map(m => (typeof m === "string" ? m : m.id || m.name)).filter(Boolean);
-    steps.push(step("/models", modelsOk, modelsOk ? `${discovered} مدل` : "پاسخ خالی/غیرمنتظره", { status: mr.status, ms: mr.ms }));
+    steps.push(step("/models", modelsOk, modelsOk ? pxTemplate`${discovered} مدل` : pxText("پاسخ خالی/غیرمنتظره"), { status: mr.status, ms: mr.ms }));
   } else {
     steps.push(step("/models", false, errorMessage(mr), { status: mr.status, ms: mr.ms }));
   }
 
   // Authentication signal
   if (mr.status === 401 || mr.status === 403) {
-    steps.push(step("Authentication", false, `HTTP ${mr.status} — کلید یا روش احراز هویت نادرست است`));
+    steps.push(step("Authentication", false, pxTemplate`HTTP ${mr.status} — کلید یا روش احراز هویت نادرست است`));
   } else if (mr.status === 429) {
-    steps.push(step("Authentication", true, "کلید پذیرفته شد ولی rate limit فعال است"));
+    steps.push(step("Authentication", true, pxText("کلید پذیرفته شد ولی rate limit فعال است")));
   } else if (modelsOk) {
-    steps.push(step("Authentication", true, "کلید پذیرفته شد"));
+    steps.push(step("Authentication", true, pxText("کلید پذیرفته شد")));
   }
 
   // /chat/completions
@@ -72,7 +73,7 @@ export async function diagnose({ baseUrl, apiKey = "", format = "openai", auth =
       : { model: testModel, max_tokens: 8, messages: [{ role: "user", content: "ping" }] };
   const cr = await httpJson(withQuery(chatPath), { method: "POST", headers: baseHeaders, body: chatBody, timeout: 30000 });
   const chatOk = cr.ok && !!cr.json;
-  steps.push(step("Chat endpoint", chatOk, chatOk ? `مدل تست: ${testModel}` : errorMessage(cr), { status: cr.status, ms: cr.ms }));
+  steps.push(step("Chat endpoint", chatOk, chatOk ? pxTemplate`مدل تست: ${testModel}` : errorMessage(cr), { status: cr.status, ms: cr.ms }));
 
   // Streaming
   let streamOk = null;
@@ -108,7 +109,7 @@ async function probeStream(url, headers, format, model) {
     const { value } = await reader.read();
     try { await reader.cancel(); } catch {}
     const chunk = new TextDecoder().decode(value || new Uint8Array());
-    return { ok: chunk.includes("data:"), detail: chunk.includes("data:") ? "SSE پشتیبانی میشود" : "SSE برنگشت", ms: Date.now() - t0 };
+    return { ok: chunk.includes("data:"), detail: chunk.includes("data:") ? pxText("SSE پشتیبانی میشود") : pxText("SSE برنگشت"), ms: Date.now() - t0 };
   } catch (e) {
     return { ok: false, detail: e.name === "AbortError" ? "timeout" : String(e.message || e), ms: Date.now() - t0 };
   } finally { clearTimeout(killer); }
@@ -127,7 +128,7 @@ function finish(steps, baseUrl, info) {
   return {
     baseUrl, steps, info,
     ok: failed.length === 0,
-    summary: failed.length ? `${failed.length} بررسی ناموفق` : "همه بررسیها موفق",
+    summary: failed.length ? pxTemplate`${failed.length} بررسی ناموفق` : pxText("همه بررسیها موفق"),
     diagnosis: diagnosisFor(steps, info)
   };
 }
@@ -135,19 +136,19 @@ function finish(steps, baseUrl, info) {
 function diagnosisFor(steps, info) {
   const find = n => steps.find(s => s.name === n);
   const models = find("/models"), chat = find("Chat endpoint"), authS = find("Authentication"), url = find("URL");
-  if (url && !url.ok) return { cause: "Base URL نامعتبر", fix: "آدرس کامل مثل https://api.example.com/v1 را وارد کنید" };
-  if (find("DNS/Network") && !find("DNS/Network").ok) return { cause: "دامنه قابل دسترسی نیست", fix: "املای دامنه و در دسترس بودن سرویس را بررسی کنید" };
-  if (authS && !authS.ok) return { cause: "احراز هویت رد شد", fix: "کلید را بررسی کنید یا روش احراز هویت را به Authorization: Bearer <API_KEY> تغییر دهید" };
-  if (models && !models.ok && chat?.ok) return { cause: "پروایدر endpoint لیست مدل ندارد", fix: "مدلها را دستی اضافه کنید — چت سالم است" };
+  if (url && !url.ok) return { cause: pxText("Base URL نامعتبر"), fix: pxText("آدرس کامل مثل https://api.example.com/v1 را وارد کنید") };
+  if (find("DNS/Network") && !find("DNS/Network").ok) return { cause: pxText("دامنه قابل دسترسی نیست"), fix: pxText("املای دامنه و در دسترس بودن سرویس را بررسی کنید") };
+  if (authS && !authS.ok) return { cause: pxText("احراز هویت رد شد"), fix: pxText("کلید را بررسی کنید یا روش احراز هویت را به Authorization: Bearer <API_KEY> تغییر دهید") };
+  if (models && !models.ok && chat?.ok) return { cause: pxText("پروایدر endpoint لیست مدل ندارد"), fix: pxText("مدلها را دستی اضافه کنید — چت سالم است") };
   if (chat && !chat.ok && models?.ok) {
-    if (chat.status === 404) return { cause: "مسیر چت متفاوت است یا مدل تست وجود ندارد", fix: "یک شناسه مدل معتبر از لیست کشفشده بدهید" };
-    if (chat.status === 401 || chat.status === 403) return { cause: "کلید مجوز چت ندارد", fix: "دسترسی/اعتبار کلید را بررسی کنید" };
-    if (chat.status === 429) return { cause: "محدودیت نرخ", fix: "کمی بعد تلاش کنید یا کلیدهای بیشتری اضافه کنید" };
-    return { cause: "خطای endpoint چت", fix: chat.detail };
+    if (chat.status === 404) return { cause: pxText("مسیر چت متفاوت است یا مدل تست وجود ندارد"), fix: pxText("یک شناسه مدل معتبر از لیست کشفشده بدهید") };
+    if (chat.status === 401 || chat.status === 403) return { cause: pxText("کلید مجوز چت ندارد"), fix: pxText("دسترسی/اعتبار کلید را بررسی کنید") };
+    if (chat.status === 429) return { cause: pxText("محدودیت نرخ"), fix: pxText("کمی بعد تلاش کنید یا کلیدهای بیشتری اضافه کنید") };
+    return { cause: pxText("خطای endpoint چت"), fix: chat.detail };
   }
   if (info?.suggestedFormat && info.suggestedFormat !== info.format) {
-    return { cause: "فرمت API مطابق تنظیم نیست", fix: `فرمت را روی ${info.suggestedFormat} بگذارید` };
+    return { cause: pxText("فرمت API مطابق تنظیم نیست"), fix: pxTemplate`فرمت را روی ${info.suggestedFormat} بگذارید` };
   }
-  if (steps.every(s => s.ok)) return { cause: null, fix: "پروایدر آماده استفاده است" };
-  return { cause: "بررسیهای جزئی ناموفق", fix: "جزئیات هر مرحله را ببینید" };
+  if (steps.every(s => s.ok)) return { cause: null, fix: pxText("پروایدر آماده استفاده است") };
+  return { cause: pxText("بررسیهای جزئی ناموفق"), fix: pxText("جزئیات هر مرحله را ببینید") };
 }

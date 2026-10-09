@@ -210,7 +210,7 @@ export function themeInitScript() {
     mode = mode === "light" ? "light" : "dark";
     try{ localStorage.setItem(KEY, mode); }catch(e){}
     paint(mode);
-    if(window.toast) try{ window.toast(mode === "light" ? "تم روشن فعال شد" : "تم تیره فعال شد", "ok"); }catch(e){}
+    if(window.toast) try{ window.toast(window.pxText ? window.pxText(mode === "light" ? "تم روشن فعال شد" : "تم تیره فعال شد") : (mode === "light" ? "تم روشن فعال شد" : "تم تیره فعال شد"), "ok"); }catch(e){}
     if(window.render) try{ window.render(); }catch(e){}
   };
   window.pxToggleTheme = function(){ window.pxSetTheme(window.pxTheme() === "light" ? "dark" : "light"); };

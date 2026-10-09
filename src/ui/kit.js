@@ -14,7 +14,7 @@ export const UI_KIT = String.raw`
   /* ═══════════ PAGE HEADER ═══════════ */
   function pageHead(o) {
     o = o || {};
-    var left = (o.back ? '<button class="btn-icon" onclick="history.back()" aria-label="بازگشت">‹</button>' : "") +
+    var left = (o.back ? pxText('<button class="btn-icon" onclick="history.back()" aria-label="بازگشت">‹</button>') : "") +
       (o.title ? '<div class="ph-t"><h2>' + (o.rawTitle ? o.title : h(o.title)) + '</h2>' +
         (o.sub ? '<p>' + h(o.sub) + '</p>' : "") + "</div>" : "");
     var acts = o.actions ? '<div class="ph-a">' + o.actions + "</div>" : "";
@@ -136,7 +136,7 @@ export const UI_KIT = String.raw`
     var off = c - (pctv / 100) * c;
     var tone = pctv >= 70 ? "var(--px-ok)" : pctv >= 35 ? "var(--px-warn)" : "var(--px-bad)";
     return '<div class="px-ring" style="width:' + sz + "px;height:" + sz + 'px">' +
-      '<svg width="' + sz + '" height="' + sz + '" role="img" aria-label="' + pctv + ' درصد">' +
+      '<svg width="' + sz + '" height="' + sz + '" role="img" aria-label="' + pctv + pxText(' درصد">') +
       '<circle class="trk" cx="' + sz / 2 + '" cy="' + sz / 2 + '" r="' + r + '"></circle>' +
       '<circle class="val" cx="' + sz / 2 + '" cy="' + sz / 2 + '" r="' + r + '" style="stroke:' + tone + ";stroke-dasharray:" + c.toFixed(1) + ";stroke-dashoffset:" + off.toFixed(1) + '"></circle>' +
       "</svg>" + '<span class="px-ring-t">' + (label !== undefined ? h(label) : Math.round(pctv) + "%") + "</span></div>";
@@ -152,7 +152,7 @@ export const UI_KIT = String.raw`
         }).join("") + "</div>" : "";
     return '<div class="px-state' + (o.tone ? " " + o.tone : "") + '">' +
       '<div class="px-state-i" aria-hidden="true">' + (o.icon || "◈") + "</div>" +
-      '<div class="px-state-t">' + h(o.title || "چیزی برای نمایش نیست") + "</div>" +
+      '<div class="px-state-t">' + h(o.title || pxText("چیزی برای نمایش نیست")) + "</div>" +
       (o.sub ? '<div class="px-state-s">' + h(o.sub) + "</div>" : "") + acts + "</div>";
   }
   function empty(o) {
@@ -160,7 +160,7 @@ export const UI_KIT = String.raw`
     var actions = [];
     if (o.btn) actions.push({ t: o.btn.t, on: o.btn.on, kind: "pri" });
     if (o.btns) actions = actions.concat(o.btns);
-    return pxState({ icon: o.icon || "◈", title: o.title || "چیزی برای نمایش وجود ندارد", sub: o.sub || "", tone: o.tone || "", actions: actions });
+    return pxState({ icon: o.icon || "◈", title: o.title || pxText("چیزی برای نمایش وجود ندارد"), sub: o.sub || "", tone: o.tone || "", actions: actions });
   }
   function skel(rows) {
     var out = "";
@@ -174,7 +174,7 @@ export const UI_KIT = String.raw`
   }
   function loading(t) {
     return '<div class="loading-box"><div class="spin" role="status" aria-live="polite"></div>' +
-      "<span>" + h(t || "در حال آمادهسازی اطلاعات…") + "</span></div>" + skel(3);
+      "<span>" + h(t || pxText("در حال آمادهسازی اطلاعات…")) + "</span></div>" + skel(3);
   }
   function errBox(e) {
     var msg = S_((e && e.message) || e);
@@ -182,19 +182,19 @@ export const UI_KIT = String.raw`
     var isAuth = status === 401 || /احراز هویت|initData|توکن/.test(msg);
     if (isAuth) {
       return pxState({
-        icon: "🔐", tone: "warn", title: "احراز هویت تلگرام",
-        sub: (e && e.hint) || "برای استفاده از پلتفرم، مینی\u200cاپ را از داخل تلگرام باز کنید.",
-        actions: [{ t: "↻ تلاش دوباره", kind: "pri", on: act("hardRefresh") }, { t: "🏠 داشبورد", on: act("go", "home") }]
+        icon: "🔐", tone: "warn", title: pxText("احراز هویت تلگرام"),
+        sub: (e && e.hint) || pxText("برای استفاده از پلتفرم، مینی\u200cاپ را از داخل تلگرام باز کنید."),
+        actions: [{ t: pxText("↻ تلاش دوباره"), kind: "pri", on: act("hardRefresh") }, { t: pxText("🏠 داشبورد"), on: act("go", "home") }]
       });
     }
     var isNet = /timeout|طولانی شد|Failed to fetch|network/i.test(msg);
     return pxState({
       icon: isNet ? "⏱" : "⚠", tone: isNet ? "warn" : "bad",
-      title: isNet ? "پاسخ سرور با تأخیر بود" : "خطا در دریافت اطلاعات",
-      sub: msg + (status ? " (کد " + status + ")" : ""),
+      title: isNet ? pxText("پاسخ سرور با تأخیر بود") : pxText("خطا در دریافت اطلاعات"),
+      sub: msg + (status ? pxText(" (کد ") + status + ")" : ""),
       actions: [
-        { t: "↻ تلاش دوباره", kind: "pri", on: act("hardRefresh") },
-        { t: "🏠 داشبورد", on: act("go", "home") }
+        { t: pxText("↻ تلاش دوباره"), kind: "pri", on: act("hardRefresh") },
+        { t: pxText("🏠 داشبورد"), on: act("go", "home") }
       ]
     });
   }
@@ -269,12 +269,12 @@ export const UI_KIT = String.raw`
     s.id = "sheet";
     s.innerHTML = '<div class="sheet-handle" aria-hidden="true"></div>' +
       '<div class="flex-between mb-3"><div class="card-t">' + h(o.title || "") + "</div>" +
-      '<button class="btn-icon" onclick="closeSheet()" aria-label="بستن">✕</button></div>' +
+      pxText('<button class="btn-icon" onclick="closeSheet()" aria-label="بستن">✕</button></div>') +
       (o.sub ? '<div class="card-sub mb-3">' + h(o.sub) + "</div>" : "") +
       '<div id="sheetB" class="sheet-b">' + (o.body || "") + "</div>" +
       (o.foot === null ? "" : '<div class="mt-4 flex-between gap-2 sheet-f" id="sheetF">' +
         (o.foot !== undefined ? o.foot :
-          '<button class="btn sec flex-1" onclick="closeSheet()">' + h(o.cancelText || "انصراف") + "</button>" +
+          '<button class="btn sec flex-1" onclick="closeSheet()">' + h(o.cancelText || pxText("انصراف")) + "</button>" +
           (o.okText ? '<button class="btn pri flex-1" id="sheetOk">' + h(o.okText) + "</button>" : "")) + "</div>");
 
     overlay.appendChild(s);
@@ -313,8 +313,8 @@ export const UI_KIT = String.raw`
     sheet({
       title: title,
       body: note(h(body), opts.kind || "warn"),
-      foot: '<button class="btn sec flex-1" onclick="closeSheet()">' + h(opts.cancelText || "لغو") + "</button>" +
-        '<button class="btn ' + (opts.danger === false ? "pri" : "dan") + ' flex-1" id="sheetOk">' + h(opts.okText || "تأیید و اجرا") + "</button>",
+      foot: '<button class="btn sec flex-1" onclick="closeSheet()">' + h(opts.cancelText || pxText("لغو")) + "</button>" +
+        '<button class="btn ' + (opts.danger === false ? "pri" : "dan") + ' flex-1" id="sheetOk">' + h(opts.okText || pxText("تأیید و اجرا")) + "</button>",
       onOk: async function () { closeSheet(); await onYes(); }
     });
   }
@@ -323,8 +323,8 @@ export const UI_KIT = String.raw`
     sheet({
       title: o.title, sub: o.sub, cls: o.cls,
       body: (o.top || "") + formHtml(o.fields, ns) + (o.bottom || ""),
-      okText: o.okText || "ذخیره تغییرات",
-      cancelText: "انصراف",
+      okText: o.okText || pxText("ذخیره تغییرات"),
+      cancelText: pxText("انصراف"),
       onOk: async function () { await o.onSave(formRead(o.fields, ns)); }
     });
   }
@@ -373,7 +373,7 @@ export const UI_KIT = String.raw`
   /* ═══════════ ACTIVITY FEED ═══════════ */
   function activityFeed(items, opts) {
     opts = opts || {};
-    if (!items || !items.length) return opts.empty ? empty(opts.empty) : pxState({ icon: opts.icon || "◷", title: opts.title || "فعالیتی ثبت نشده", sub: opts.sub || "" });
+    if (!items || !items.length) return opts.empty ? empty(opts.empty) : pxState({ icon: opts.icon || "◷", title: opts.title || pxText("فعالیتی ثبت نشده"), sub: opts.sub || "" });
     return '<div class="px-feed">' + items.map(function (a) {
       return '<div class="px-act">' +
         '<div class="px-act-i" aria-hidden="true">' + (a.icon || "•") + "</div>" +
@@ -404,8 +404,8 @@ export const UI_KIT = String.raw`
   }
   function searchField(id, placeholder, value, onInput) {
     return '<div class="px-search"><i aria-hidden="true">🔍</i>' +
-      '<input id="' + id + '" type="search" placeholder="' + h(placeholder || "جستجو…") + '" value="' + h(value || "") + '" ' +
-      'oninput="' + (onInput || "") + '" autocomplete="off" aria-label="' + h(placeholder || "جستجو") + '"></div>';
+      '<input id="' + id + '" type="search" placeholder="' + h(placeholder || pxText("جستجو…")) + '" value="' + h(value || "") + '" ' +
+      'oninput="' + (onInput || "") + '" autocomplete="off" aria-label="' + h(placeholder || pxText("جستجو")) + '"></div>';
   }
   function toolbar(parts) {
     return '<div class="px-toolbar">' + parts.filter(Boolean).join("") + "</div>";
@@ -415,7 +415,7 @@ export const UI_KIT = String.raw`
   /* ═══════════ CODE BLOCK / TABS BAR ═══════════ */
   function codeBox(text, id) {
     return '<div class="code-box"><div class="code-head"><span>OUTPUT</span>' +
-      '<button class="btn sm sec" ' + act("copyEl", id || "") + ">کپی</button></div>" +
+      '<button class="btn sm sec" ' + act("copyEl", id || "") + pxText(">کپی</button></div>") +
       '<div class="code-body"' + (id ? ' id="' + id + '"' : "") + ">" + h(text) + "</div></div>";
   }
   function tabsBar(key, items) {
@@ -432,29 +432,29 @@ export const UI_KIT = String.raw`
   /* ═══════════ COMMAND PALETTE (Ctrl/Cmd+K) ═══════════ */
   var PAL = { open: false, sel: 0, items: [], seq: 0, q: "" };
   var TYPE_META = {
-    model: { i: "◇", l: "مدل", route: "model", detail: true },
-    provider: { i: "▣", l: "پروایدر", route: "provider", detail: true },
-    agent: { i: "◉", l: "ایجنت", route: "agent", detail: true },
-    project: { i: "◰", l: "پروژه", route: "projects" },
-    workflow: { i: "◷", l: "ورکفلو", route: "automation" },
-    task: { i: "◷", l: "اتوماسیون", route: "automation" },
-    memory: { i: "◫", l: "حافظه", route: "memory" },
-    prompt: { i: "✎", l: "پرامپت", route: "prompts" },
-    knowledge: { i: "▤", l: "دانش", route: "knowledge" },
-    eval: { i: "◎", l: "ارزیابی", route: "eval" },
-    budget: { i: "💰", l: "بودجه", route: "costs" },
-    tenant: { i: "🏢", l: "سازمان", route: "tenants" },
-    webhook: { i: "⇢", l: "وبهوک", route: "settings" }
+    model: { i: "◇", l: pxText("مدل"), route: "model", detail: true },
+    provider: { i: "▣", l: pxText("پروایدر"), route: "provider", detail: true },
+    agent: { i: "◉", l: pxText("ایجنت"), route: "agent", detail: true },
+    project: { i: "◰", l: pxText("پروژه"), route: "projects" },
+    workflow: { i: "◷", l: pxText("ورکفلو"), route: "automation" },
+    task: { i: "◷", l: pxText("اتوماسیون"), route: "automation" },
+    memory: { i: "◫", l: pxText("حافظه"), route: "memory" },
+    prompt: { i: "✎", l: pxText("پرامپت"), route: "prompts" },
+    knowledge: { i: "▤", l: pxText("دانش"), route: "knowledge" },
+    eval: { i: "◎", l: pxText("ارزیابی"), route: "eval" },
+    budget: { i: "💰", l: pxText("بودجه"), route: "costs" },
+    tenant: { i: "🏢", l: pxText("سازمان"), route: "tenants" },
+    webhook: { i: "⇢", l: pxText("وبهوک"), route: "settings" }
   };
   var QUICK = [
-    { t: "مکالمه جدید", s: "چت تازه با مدل پیشفرض", i: "＋", run: function () { newChat(); } },
-    { t: "شورای هوش مصنوعی", s: "پرسش همزمان از چند مدل", i: "⚡", run: function () { go("council"); } },
-    { t: "آرنا و مقایسه مدلها", s: "تست مستقیم چند مدل", i: "⇄", run: function () { go("compare"); } },
-    { t: "افزودن پروایدر", s: "ثبت منبع هوش مصنوعی", i: "＋", run: function () { providerNew(); } },
-    { t: "ایجنت جدید", s: "تعریف عامل سفارشی", i: "＋", run: function () { agentNew(); } },
-    { t: "ثبت حافظه", s: "افزودن اطلاعات به حافظه", i: "◫", run: function () { memNew(); } },
-    { t: "پایش سلامت مدلها", s: "اجرای Health Sweep", i: "◍", run: function () { healthSweep(); } },
-    { t: "تازهسازی کامل", s: "پاک کردن کش و رندر مجدد", i: "↻", run: function () { hardRefresh(); } }
+    { t: pxText("مکالمه جدید"), s: pxText("چت تازه با مدل پیشفرض"), i: "＋", run: function () { newChat(); } },
+    { t: pxText("شورای هوش مصنوعی"), s: pxText("پرسش همزمان از چند مدل"), i: "⚡", run: function () { go("council"); } },
+    { t: pxText("آرنا و مقایسه مدلها"), s: pxText("تست مستقیم چند مدل"), i: "⇄", run: function () { go("compare"); } },
+    { t: pxText("افزودن پروایدر"), s: pxText("ثبت منبع هوش مصنوعی"), i: "＋", run: function () { providerNew(); } },
+    { t: pxText("ایجنت جدید"), s: pxText("تعریف عامل سفارشی"), i: "＋", run: function () { agentNew(); } },
+    { t: pxText("ثبت حافظه"), s: pxText("افزودن اطلاعات به حافظه"), i: "◫", run: function () { memNew(); } },
+    { t: pxText("پایش سلامت مدلها"), s: pxText("اجرای Health Sweep"), i: "◍", run: function () { healthSweep(); } },
+    { t: pxText("تازهسازی کامل"), s: pxText("پاک کردن کش و رندر مجدد"), i: "↻", run: function () { hardRefresh(); } }
   ];
   function localItems(q) {
     var term = S_(q).toLowerCase().trim(), out = [];
@@ -462,19 +462,19 @@ export const UI_KIT = String.raw`
       g.items.forEach(function (it) {
         if (it.admin && !S.isAdmin) return;
         if (term && (it.l.toLowerCase().indexOf(term) < 0 && g.g.toLowerCase().indexOf(term) < 0)) return;
-        out.push({ g: "صفحات", i: it.i, t: it.l, s: g.g, run: function () { go(it.id); } });
+        out.push({ g: pxText("صفحات"), i: it.i, t: it.l, s: g.g, run: function () { go(it.id); } });
       });
     });
     QUICK.forEach(function (c) {
       if (term && (c.t.toLowerCase().indexOf(term) < 0 && c.s.toLowerCase().indexOf(term) < 0)) return;
-      out.push({ g: "اقدامات", i: c.i, t: c.t, s: c.s, run: c.run });
+      out.push({ g: pxText("اقدامات"), i: c.i, t: c.t, s: c.s, run: c.run });
     });
     return out;
   }
   function remotePaint(results, q) {
     var box = document.getElementById("palRemote");
     if (!box) return;
-    if (!results || !results.length) { box.innerHTML = q ? '<div class="px-cmd-g">در پلتفرم یافت نشد</div>' : ""; return; }
+    if (!results || !results.length) { box.innerHTML = q ? pxText('<div class="px-cmd-g">در پلتفرم یافت نشد</div>') : ""; return; }
     var byType = {};
     results.forEach(function (r) { (byType[r.type] = byType[r.type] || []).push(r); });
     var html = "";
@@ -519,14 +519,14 @@ export const UI_KIT = String.raw`
           '<span class="px-cmd-x tiny">↵</span></div>';
       });
     });
-    if (!local.length) html = '<div class="px-cmd-g">دستوری یافت نشد</div>';
+    if (!local.length) html = pxText('<div class="px-cmd-g">دستوری یافت نشد</div>');
     listEl.innerHTML = html;
     listEl.querySelectorAll("[data-pxcmd]").forEach(function (el) {
       el.onclick = function () { runLocal(Number(el.getAttribute("data-pxcmd"))); };
     });
     var box = document.getElementById("palRemote");
     if (!S_(q).trim()) { if (box) box.innerHTML = ""; return; }
-    if (box) box.innerHTML = '<div class="px-cmd-g">در حال جستجوی پلتفرم…</div>';
+    if (box) box.innerHTML = pxText('<div class="px-cmd-g">در حال جستجوی پلتفرم…</div>');
     var mySeq = ++PAL.seq;
     api("/search?q=" + encodeURIComponent(q), { timeout: 6000 }).then(function (r) {
       if (mySeq !== PAL.seq) return;
@@ -552,12 +552,12 @@ export const UI_KIT = String.raw`
     overlay.id = "palOverlay";
     overlay.setAttribute("role", "dialog");
     overlay.setAttribute("aria-modal", "true");
-    overlay.setAttribute("aria-label", "جستجو و اجرای سریع");
+    overlay.setAttribute("aria-label", pxText("جستجو و اجرای سریع"));
     overlay.onclick = function (e) { if (e.target === overlay) closePalette(); };
     var s = document.createElement("div");
     s.className = "modal-sheet px-cmd";
     s.innerHTML = '<div class="px-cmd-head"><i aria-hidden="true">🔍</i>' +
-      '<input id="palQ" placeholder="جستجوی مدل، پروایدر، ایجنت، صفحه یا اقدام…" autocomplete="off" spellcheck="false" aria-label="جستجو">' +
+      pxText('<input id="palQ" placeholder="جستجوی مدل، پروایدر، ایجنت، صفحه یا اقدام…" autocomplete="off" spellcheck="false" aria-label="جستجو">') +
       "<kbd>ESC</kbd></div>" +
       '<div class="px-cmd-list"><div id="palList"></div><div id="palRemote"></div></div>';
     overlay.appendChild(s);

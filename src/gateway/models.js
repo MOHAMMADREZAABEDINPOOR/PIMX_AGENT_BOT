@@ -1,3 +1,4 @@
+import { pxText, pxTemplate } from '../i18n/server.js';
 // ─────────────────────────────────────────────
 // 🧠 Model Registry — کشف، ثبت، تست، سلامت، قابلیتها
 // ─────────────────────────────────────────────
@@ -316,7 +317,7 @@ export function extractPricing(raw, modelId = "") {
 export async function upsertModel(env, provider, rawOrId, extra = {}) {
   const raw = typeof rawOrId === "string" ? { id: rawOrId } : (rawOrId || {});
   const apiModelId = String(raw.id || raw.name || raw.model || "").replace(/^models\//, "");
-  if (!apiModelId) throw new Error("شناسه مدل نامعتبر است");
+  if (!apiModelId) throw new Error(pxText("شناسه مدل نامعتبر است"));
   const slug = modelSlug(provider.id, apiModelId);
   const existing = (await listModels(env, { providerId: provider.id })).find(m => m.apiModelId === apiModelId);
   const { caps, contextWindow } = inferCapabilities(raw, apiModelId);
@@ -375,7 +376,7 @@ function trimRaw(raw) {
 // ─────────────────────────────────────────────
 export async function discoverModels(env, providerId, userId = 0) {
   const provider = await getProvider(env, providerId);
-  if (!provider) throw new Error("پروایدر یافت نشد");
+  if (!provider) throw new Error(pxText("پروایدر یافت نشد"));
   const { models: raw, path, attempts } = await fetchModelList(env, provider);
   const imported = [];
   let createdCount = 0;
@@ -398,14 +399,14 @@ export const TEST_SUITE = {
     label: "Basic Chat",
     messages: [{ role: "user", content: "Reply with: PIMX_OK" }],
     opts: { maxTokens: 256, temperature: 0.2 },
-    check: r => (r.text || "").trim().length > 0 ? null : "پاسخی از مدل دریافت نشد",
+    check: r => (r.text || "").trim().length > 0 ? null : pxText("پاسخی از مدل دریافت نشد"),
     capability: "chat"
   },
   streaming: {
     label: "Streaming",
     messages: [{ role: "user", content: "Count from 1 to 5, separated by spaces." }],
     opts: { maxTokens: 256, temperature: 0.2, stream: true },
-    check: r => (r.text || "").trim().length > 0 ? null : "استریم متنی دریافت نشد",
+    check: r => (r.text || "").trim().length > 0 ? null : pxText("استریم متنی دریافت نشد"),
     capability: "streaming"
   },
   json: {
@@ -414,9 +415,9 @@ export const TEST_SUITE = {
     opts: { maxTokens: 60, temperature: 0, json: true },
     check: r => {
       const m = (r.text || "").match(/\{[\s\S]*\}/);
-      if (!m) return "JSON پیدا نشد";
-      try { const j = JSON.parse(m[0]); return j.ok === true && Number(j.n) === 7 ? null : "مقادیر JSON مطابق نبود"; }
-      catch { return "JSON نامعتبر"; }
+      if (!m) return pxText("JSON پیدا نشد");
+      try { const j = JSON.parse(m[0]); return j.ok === true && Number(j.n) === 7 ? null : pxText("مقادیر JSON مطابق نبود"); }
+      catch { return pxText("JSON نامعتبر"); }
     },
     capability: "json"
   },
@@ -424,21 +425,21 @@ export const TEST_SUITE = {
     label: "Coding",
     messages: [{ role: "user", content: "Write a JavaScript function named add that returns the sum of two args. Code only." }],
     opts: { maxTokens: 160, temperature: 0 },
-    check: r => /function\s+add|const\s+add\s*=|add\s*=\s*\(/.test(r.text || "") ? null : "کد معتبر تولید نشد",
+    check: r => /function\s+add|const\s+add\s*=|add\s*=\s*\(/.test(r.text || "") ? null : pxText("کد معتبر تولید نشد"),
     capability: "chat"
   },
   reasoning: {
     label: "Reasoning",
     messages: [{ role: "user", content: "A bat and ball cost $1.10. The bat costs $1.00 more than the ball. How much is the ball? Answer with the number only in dollars." }],
     opts: { maxTokens: 200, temperature: 0 },
-    check: r => /0?\.05|5\s*cents|۵/.test(r.text || "") ? null : "پاسخ استدلالی نادرست",
+    check: r => /0?\.05|5\s*cents|۵/.test(r.text || "") ? null : pxText("پاسخ استدلالی نادرست"),
     capability: "reasoning"
   },
   multilingual: {
     label: "Multilingual",
     messages: [{ role: "user", content: "Translate to Persian, output only the translation: Good morning" }],
     opts: { maxTokens: 60, temperature: 0 },
-    check: r => /[\u0600-\u06FF]/.test(r.text || "") ? null : "خروجی فارسی نبود",
+    check: r => /[\u0600-\u06FF]/.test(r.text || "") ? null : pxText("خروجی فارسی نبود"),
     capability: "chat"
   },
   longContext: {
@@ -448,7 +449,7 @@ export const TEST_SUITE = {
       content: `Here is a list.\n${Array.from({ length: 400 }, (_, i) => `item-${i}: value-${i}`).join("\n")}\n\nWhat is the value of item-377? Answer with the value only.`
     }],
     opts: { maxTokens: 40, temperature: 0 },
-    check: r => /value-377/.test(r.text || "") ? null : "بازیابی از متن بلند ناموفق",
+    check: r => /value-377/.test(r.text || "") ? null : pxText("بازیابی از متن بلند ناموفق"),
     capability: "longContext"
   },
   tools: {
@@ -465,7 +466,7 @@ export const TEST_SUITE = {
         }
       }]
     },
-    check: r => (r.toolCalls || []).some(t => t.name === "get_weather") ? null : "tool_call برنگشت",
+    check: r => (r.toolCalls || []).some(t => t.name === "get_weather") ? null : pxText("tool_call برنگشت"),
     capability: "tools"
   },
   vision: {
@@ -478,7 +479,7 @@ export const TEST_SUITE = {
       ]
     }],
     opts: { maxTokens: 30, temperature: 0 },
-    check: r => (r.text || "").trim() ? null : "پاسخ تصویری خالی",
+    check: r => (r.text || "").trim() ? null : pxText("پاسخ تصویری خالی"),
     capability: "vision"
   },
   errorHandling: {
@@ -495,9 +496,9 @@ export const DEFAULT_TESTS = ["basic", "streaming", "json"];
 
 export async function runModelTest(env, model, testKey, opts = {}) {
   const t = TEST_SUITE[testKey];
-  if (!t) throw new Error(`تست ${testKey} وجود ندارد`);
+  if (!t) throw new Error(pxTemplate`تست ${testKey} وجود ندارد`);
   const provider = await getProvider(env, model.providerId);
-  if (!provider) throw new Error("پروایدر مدل یافت نشد");
+  if (!provider) throw new Error(pxText("پروایدر مدل یافت نشد"));
   const t0 = Date.now();
   try {
     const callOpts = { ...t.opts, timeout: opts.timeout || 40000 };
@@ -523,7 +524,7 @@ export async function runModelTest(env, model, testKey, opts = {}) {
 // اجرای مجموعهای از تستها + بهروزرسانی قابلیتها و سلامت
 export async function testModel(env, modelId, tests = DEFAULT_TESTS, userId = 0) {
   const model = await getModel(env, modelId);
-  if (!model) throw new Error("مدل یافت نشد");
+  if (!model) throw new Error(pxText("مدل یافت نشد"));
   const results = [];
   for (const key of tests) {
     if (!TEST_SUITE[key]) continue;

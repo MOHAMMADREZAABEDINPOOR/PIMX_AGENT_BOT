@@ -1,79 +1,79 @@
 export const APP_SHELL = String.raw`
 /* ═══════════ NAV STRUCTURE ═══════════ */
 const NAV = [
-  { g: "فضای من", items: [
-    { id: "home", i: "🏠", l: "شروع" },
-    { id: "chat", i: "💬", l: "گفتگوها" },
-    { id: "backup", i: "💾", l: "پشتیبان و انتقال" },
-    { id: "council", i: "🧠", l: "شورای هوش مصنوعی" },
-    { id: "playground", i: "▶", l: "آزمایشگاه پارامتریک" }
+  { g: pxText("فضای من"), items: [
+    { id: "home", i: "🏠", l: pxText("شروع") },
+    { id: "chat", i: "💬", l: pxText("گفتگوها") },
+    { id: "backup", i: "💾", l: pxText("پشتیبان و انتقال") },
+    { id: "council", i: "🧠", l: pxText("شورای هوش مصنوعی") },
+    { id: "playground", i: "▶", l: pxText("آزمایشگاه پارامتریک") }
   ]},
-  { g: "گیت‌وی و مدل‌ها", items: [
-    { id: "providers", i: "🔌", l: "پروایدرها" },
-    { id: "models", i: "🤖", l: "مدل‌ها" },
-    { id: "compare", i: "⚖", l: "آرنا و مقایسه" },
-    { id: "routing", i: "⇄", l: "مسیریابی هوشمند" }
+  { g: pxText("گیت‌وی و مدل‌ها"), items: [
+    { id: "providers", i: "🔌", l: pxText("پروایدرها") },
+    { id: "models", i: "🤖", l: pxText("مدل‌ها") },
+    { id: "compare", i: "⚖", l: pxText("آرنا و مقایسه") },
+    { id: "routing", i: "⇄", l: pxText("مسیریابی هوشمند") }
   ]},
-  { g: "دانش و استودیو", items: [
-    { id: "memory", i: "🧠", l: "حافظه ساختاریافته" },
-    { id: "knowledge", i: "📚", l: "پایگاه دانش RAG" },
-    { id: "prompts", i: "🧪", l: "استودیو پرامپت" },
-    { id: "projects", i: "📁", l: "پروژه‌ها" }
+  { g: pxText("دانش و استودیو"), items: [
+    { id: "memory", i: "🧠", l: pxText("حافظه ساختاریافته") },
+    { id: "knowledge", i: "📚", l: pxText("پایگاه دانش RAG") },
+    { id: "prompts", i: "🧪", l: pxText("استودیو پرامپت") },
+    { id: "projects", i: "📁", l: pxText("پروژه‌ها") }
   ]},
-  { g: "عامل‌ها و ابزارها", items: [
-    { id: "agents", i: "🤝", l: "عامل‌های هوشمند" },
-    { id: "tools", i: "🛠", l: "ابزارها و MCP" },
-    { id: "automation", i: "⚡", l: "اتوماسیون و سناریوها" }
+  { g: pxText("عامل‌ها و ابزارها"), items: [
+    { id: "agents", i: "🤝", l: pxText("عامل‌های هوشمند") },
+    { id: "tools", i: "🛠", l: pxText("ابزارها و MCP") },
+    { id: "automation", i: "⚡", l: pxText("اتوماسیون و سناریوها") }
   ]},
-  { g: "عملیات و پایش", items: [
-    { id: "monitor", i: "📡", l: "سلامت و تلمتری" },
-    { id: "costs", i: "📊", l: "مصرف و هزینه‌ها" },
-    { id: "eval", i: "◎", l: "ارزیابی کیفیت" },
-    { id: "alerts", i: "🔔", l: "هشدارها" },
-    { id: "approvals", i: "🛡", l: "تأییدیه‌ها" }
+  { g: pxText("عملیات و پایش"), items: [
+    { id: "monitor", i: "📡", l: pxText("سلامت و تلمتری") },
+    { id: "costs", i: "📊", l: pxText("مصرف و هزینه‌ها") },
+    { id: "eval", i: "◎", l: pxText("ارزیابی کیفیت") },
+    { id: "alerts", i: "🔔", l: pxText("هشدارها") },
+    { id: "approvals", i: "🛡", l: pxText("تأییدیه‌ها") }
   ]},
-  { g: "سیستم", items: [
-    { id: "settings", i: "⚙️", l: "تنظیمات پلتفرم" }
+  { g: pxText("سیستم"), items: [
+    { id: "settings", i: "⚙️", l: pxText("تنظیمات پلتفرم") }
   ]}
 ];
 
 const TABS = [
-  { id: "home", i: "🏠", l: "شروع" },
-  { id: "chat", i: "💬", l: "چت" },
-  { id: "council", i: "🧠", l: "شورا" },
-  { id: "backup", i: "💾", l: "پشتیبان" },
-  { id: "__more", i: "☰", l: "منو" }
+  { id: "home", i: "🏠", l: pxText("شروع") },
+  { id: "chat", i: "💬", l: pxText("چت") },
+  { id: "council", i: "🧠", l: pxText("شورا") },
+  { id: "backup", i: "💾", l: pxText("پشتیبان") },
+  { id: "__more", i: "☰", l: pxText("منو") }
 ];
 
 const TITLES = {
-  home: ["فضای هوشمند تو", "ایده‌ها از همین‌جا شروع می‌شوند"],
-  chat: ["گفتگوها", "پاسخ زنده، با حافظهٔ شخصی تو"],
-  backup: ["پشتیبان و انتقال", "گفتگو و حافظه‌ات را همراهت ببر"],
-  council: ["شورای هوش مصنوعی", "هم‌اندیشی و داوری چند مدل"],
-  playground: ["Playground", "تست مستقیم و پارامتریک مدل"],
-  providers: ["پروایدرهای هوش مصنوعی", "مدیریت کلیدها و منابع API"],
-  provider: ["جزئیات پروایدر", "پیکربندی و سلامت اتصال"],
-  models: ["فهرست مدل‌ها", "مدل‌های در دسترس و وضعیت"],
-  model: ["مشخصات مدل", "عملکرد، هزینه و پیکربندی"],
-  compare: ["آرنای مقایسه زنده", "تست همزمان چند مدل"],
-  routing: ["مسیریابی هوشمند", "قوانین انتخاب خودکار مدل"],
-  agents: ["عامل‌های هوشمند", "ایجنت‌های خودکار و ابزارها"],
-  agent: ["پیکربندی ایجنت", "پرامپت، ابزارها و تاریخچه"],
-  runs: ["تاریخچه اجرا", "لاگ اجراهای خودکار ایجنت"],
-  run: ["جزئیات اجرا", "بررسی مراحل و ابزارهای صدازده شده"],
-  tools: ["ابزارها و MCP", "توابع و یکپارچگی‌های خارجی"],
-  memory: ["حافظه بلندمدت", "پروفایل و دانش استخراج‌شده"],
-  knowledge: ["پایگاه دانش RAG", "مدیریت اسناد و وکتورها"],
-  prompts: ["استودیو پرامپت", "قالب‌ها، نسخه‌ها و A/B Test"],
-  projects: ["پروژه‌ها", "گروه‌بندی کارهای تیمی و شخصی"],
-  automation: ["اتوماسیون و سناریوها", "زمان‌بندی و ورودی‌های خودکار"],
-  monitor: ["مانیتورینگ و تلمتری", "سلامت سرویس‌ها و لتنسی"],
-  costs: ["مدیریت هزینه‌ها", "بودجه و پایش توکن‌ها"],
-  eval: ["ارزیابی کیفیت", "سنجش و بنچمارک هوشمند"],
-  alerts: ["هشدارهای سیستمی", "مانیتورینگ خطاهای سرویس"],
-  approvals: ["تأییدیه‌های حساس", "کنترل اقدامات امنیتی"],
-  settings: ["تنظیمات پلتفرم", "سکرت‌ها، توکن‌ها و تم"],
-  tenants: ["سازمان‌ها و مستأجرین", "مدیریت دسترسی چندگانه"]
+  home: [pxText("فضای هوشمند تو"), pxText("ایده‌ها از همین‌جا شروع می‌شوند")],
+  chat: [pxText("گفتگوها"), pxText("پاسخ زنده، با حافظهٔ شخصی تو")],
+  backup: [pxText("پشتیبان و انتقال"), pxText("گفتگو و حافظه‌ات را همراهت ببر")],
+  council: [pxText("شورای هوش مصنوعی"), pxText("هم‌اندیشی و داوری چند مدل")],
+  playground: ["Playground", pxText("تست مستقیم و پارامتریک مدل")],
+  providers: [pxText("پروایدرهای هوش مصنوعی"), pxText("مدیریت کلیدها و منابع API")],
+  provider: [pxText("جزئیات پروایدر"), pxText("پیکربندی و سلامت اتصال")],
+  models: [pxText("فهرست مدل‌ها"), pxText("مدل‌های در دسترس و وضعیت")],
+  model: [pxText("مشخصات مدل"), pxText("عملکرد، هزینه و پیکربندی")],
+  compare: [pxText("آرنای مقایسه زنده"), pxText("تست همزمان چند مدل")],
+  routing: [pxText("مسیریابی هوشمند"), pxText("قوانین انتخاب خودکار مدل")],
+  agents: [pxText("عامل‌های هوشمند"), pxText("ایجنت‌های خودکار و ابزارها")],
+  agent: [pxText("پیکربندی ایجنت"), pxText("پرامپت، ابزارها و تاریخچه")],
+  runs: [pxText("تاریخچه اجرا"), pxText("لاگ اجراهای خودکار ایجنت")],
+  run: [pxText("جزئیات اجرا"), pxText("بررسی مراحل و ابزارهای صدازده شده")],
+  tools: [pxText("ابزارها و MCP"), pxText("توابع و یکپارچگی‌های خارجی")],
+  memory: [pxText("حافظه بلندمدت"), pxText("پروفایل و دانش استخراج‌شده")],
+  knowledge: [pxText("پایگاه دانش RAG"), pxText("مدیریت اسناد و وکتورها")],
+  prompts: [pxText("استودیو پرامپت"), pxText("قالب‌ها، نسخه‌ها و A/B Test")],
+  projects: [pxText("پروژه‌ها"), pxText("گروه‌بندی کارهای تیمی و شخصی")],
+  automation: [pxText("اتوماسیون و سناریوها"), pxText("زمان‌بندی و ورودی‌های خودکار")],
+  monitor: [pxText("مانیتورینگ و تلمتری"), pxText("سلامت سرویس‌ها و لتنسی")],
+  costs: [pxText("مدیریت هزینه‌ها"), pxText("بودجه و پایش توکن‌ها")],
+  eval: [pxText("ارزیابی کیفیت"), pxText("سنجش و بنچمارک هوشمند")],
+  alerts: [pxText("هشدارهای سیستمی"), pxText("مانیتورینگ خطاهای سرویس")],
+  approvals: [pxText("تأییدیه‌های حساس"), pxText("کنترل اقدامات امنیتی")],
+  settings: [pxText("تنظیمات پلتفرم"), pxText("سکرت‌ها، توکن‌ها و تم")],
+  tenants: [pxText("سازمان‌ها و مستأجرین"), pxText("مدیریت دسترسی چندگانه")]
 };
 
 const PARENT = {
@@ -193,8 +193,8 @@ function navHtml() {
   const uname = userLabel();
   return '<aside class="side' + (S.navOpen ? " open" : "") + '" id="side">' +
     '<div class="side-h"><div class="logo">P</div>' +
-    '<div><div class="nm">PIMX<span>AGENT</span></div><div class="tg">فضای هوشمند تو</div></div></div>' +
-    '<button class="side-new" onclick="newChat()">' + pxIcon('spark') + '<span>یک گفتگوی تازه</span><span class="side-plus">＋</span></button>' +
+    pxText('<div><div class="nm">PIMX<span>AGENT</span></div><div class="tg">فضای هوشمند تو</div></div></div>') +
+    '<button class="side-new" onclick="newChat()">' + pxIcon('spark') + pxText('<span>یک گفتگوی تازه</span><span class="side-plus">＋</span></button>') +
     '<div class="side-s">' +
     NAV.map(function (g) {
       const items = g.items.filter(function (it) { return !it.admin || S.isAdmin; });
@@ -218,7 +218,7 @@ function navHtml() {
 function userLabel() {
   const u = S.user || {};
   const full = [u.firstName, u.lastName].filter(Boolean).join(" ").trim();
-  return full || u.name || u.username || "کاربر PIMX";
+  return full || u.name || u.username || pxText("کاربر PIMX");
 }
 function userInitials() {
   const u = S.user || {};
@@ -254,10 +254,10 @@ window.userLabel = userLabel; window.avatarHtml = avatarHtml; window.avatarFallb
 window.navGo = function (id) { closeNav(); go(id); };
 
 function tabsHtml() {
-  return '<nav class="tabbar" role="navigation" aria-label="ناوبری اصلی">' + TABS.map(function (t) {
+  return pxText('<nav class="tabbar" role="navigation" aria-label="ناوبری اصلی">') + TABS.map(function (t) {
     if (t.id === "__more") {
       const on = ["home", "chat", "council", "backup"].indexOf(S.route) < 0;
-      return '<button class="tabi' + (on ? " on" : "") + '" data-route="__more" onclick="openNav()" aria-label="منوی کامل">' +
+      return '<button class="tabi' + (on ? " on" : "") + pxText('" data-route="__more" onclick="openNav()" aria-label="منوی کامل">') +
         '<i aria-hidden="true">' + pxIcon('menu') + '</i><span>' + h(t.l) + '</span></button>';
     }
     const on = S.route === t.id || PARENT[S.route] === t.id;
@@ -274,14 +274,15 @@ function shell(content) {
     '<div class="side-overlay' + (S.navOpen ? " open" : "") + '" id="scrim" onclick="closeNav()"></div>' +
     '<div class="main-wrap">' +
     '<header class="head">' +
-    '<button class="btn-icon head-menu" onclick="openNav()" aria-label="منوی اصلی">' + pxIcon('menu') + '</button>' +
-    '<button class="btn-icon head-back" id="headBack" onclick="goBack()" aria-label="بازگشت" title="بازگشت"' + (S.route === "home" ? ' hidden' : '') + '><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>' +
+    pxText('<button class="btn-icon head-menu" onclick="openNav()" aria-label="منوی اصلی">') + pxIcon('menu') + '</button>' +
+    pxText('<button class="btn-icon head-back" id="headBack" onclick="goBack()" aria-label="بازگشت" title="بازگشت"') + (S.route === "home" ? ' hidden' : '') + '><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>' +
     '<div class="head-t"><h1>' + h(meta[0]) + '</h1><div class="sub">' + h(meta[1]) + '</div></div>' +
     '<div class="head-actions">' +
-    '<button class="btn-icon" onclick="palette()" title="جستجو و اجرای سریع (Ctrl+K)" aria-label="جستجو">' + pxIcon('search') + '</button>' +
-    '<button class="btn-icon theme-toggle" onclick="pxToggleTheme()" title="تغییر تم" aria-label="تغییر تم">' + pxIcon(isLight ? 'moon' : 'sun') + '</button>' +
-    '<button class="btn-icon head-refresh" onclick="hardRefresh()" title="بروزرسانی داده‌ها" aria-label="بروزرسانی">' + pxIcon('restore') + '</button>' +
-    '<button class="btn-icon avbtn" onclick="go(\'settings\')" aria-label="پروفایل و تنظیمات">' + avatarHtml(28) + '</button>' +
+    '<button class="btn-icon language-toggle" id="languageToggle" onclick="pxToggleLanguage()" aria-label="' + (PX_LANGUAGE === 'fa' ? 'Switch to English' : 'تغییر زبان به فارسی') + '" title="' + (PX_LANGUAGE === 'fa' ? 'English' : 'فارسی') + '">' + (PX_LANGUAGE === 'fa' ? 'EN' : 'فا') + '</button>' +
+    pxText('<button class="btn-icon" onclick="palette()" title="جستجو و اجرای سریع (Ctrl+K)" aria-label="جستجو">') + pxIcon('search') + '</button>' +
+    pxText('<button class="btn-icon theme-toggle" onclick="pxToggleTheme()" title="تغییر تم" aria-label="تغییر تم">') + pxIcon(isLight ? 'moon' : 'sun') + '</button>' +
+    pxText('<button class="btn-icon head-refresh" onclick="hardRefresh()" title="بروزرسانی داده‌ها" aria-label="بروزرسانی">') + pxIcon('restore') + '</button>' +
+    pxText('<button class="btn-icon avbtn" onclick="go(\'settings\')" aria-label="پروفایل و تنظیمات">') + avatarHtml(28) + '</button>' +
     '</div>' +
     '</header>' +
     '<main class="main" id="main"><div id="view">' + content + '</div></main>' +
@@ -353,6 +354,7 @@ async function render() {
     if (token !== RENDERING) return;
     const v = document.getElementById("view");
     if (v) { v.classList.remove('workspace-view'); delete v.dataset.workspace; v.innerHTML = html; v.removeAttribute("aria-busy"); }
+    if (window.pxRestoreLanguageDraft) window.pxRestoreLanguageDraft();
     if (window.AFTER && window.AFTER[S.route]) {
       try { await window.AFTER[S.route](); } catch (e) { console.warn("[AFTER]", e); }
     }
@@ -380,18 +382,18 @@ window.warm = warm;
 const CMDS = [];
 NAV.forEach(function (g) {
   g.items.forEach(function (it) {
-    CMDS.push({ g: g.g, i: it.i, t: it.l, s: "رفتن به " + it.l, run: function () { go(it.id); } });
+    CMDS.push({ g: g.g, i: it.i, t: it.l, s: pxText("رفتن به ") + it.l, run: function () { go(it.id); } });
   });
 });
 CMDS.push(
-  { g: "اقدامات سریع", i: "＋", t: "مکالمه جدید", s: "چت تازه با مدل پیش‌فرض", run: function () { newChat(); } },
-  { g: "اقدامات سریع", i: "＋", t: "افزودن پروایدر", s: "تنظیم منبع هوش مصنوعی", run: function () { providerNew(); } },
-  { g: "اقدامات سریع", i: "＋", t: "ایجنت هوشمند جدید", s: "تعریف عامل سفارشی", run: function () { agentNew(); } },
-  { g: "اقدامات سریع", i: "＋", t: "ثبت حافظه جدید", s: "افزودن اطلاعات شخصی", run: function () { memNew(); } },
-  { g: "اقدامات سریع", i: "⚡", t: "شورای هم‌فکری AI", s: "پرسش همزمان از چند مدل", run: function () { go("council"); } },
-  { g: "اقدامات سریع", i: "⇄", t: "آرنا و مقایسه", s: "تست مستقیم چند مدل", run: function () { go("compare"); } },
-  { g: "عملیات", i: "◍", t: "پایش سلامت مدل‌ها", s: "اجرای Health Check کامل", run: function () { healthSweep(); } },
-  { g: "عملیات", i: "↻", t: "پاکسازی کش", s: "تازه کردن تمام داده‌ها", run: function () { hardRefresh(); } }
+  { g: pxText("اقدامات سریع"), i: "＋", t: pxText("مکالمه جدید"), s: pxText("چت تازه با مدل پیش‌فرض"), run: function () { newChat(); } },
+  { g: pxText("اقدامات سریع"), i: "＋", t: pxText("افزودن پروایدر"), s: pxText("تنظیم منبع هوش مصنوعی"), run: function () { providerNew(); } },
+  { g: pxText("اقدامات سریع"), i: "＋", t: pxText("ایجنت هوشمند جدید"), s: pxText("تعریف عامل سفارشی"), run: function () { agentNew(); } },
+  { g: pxText("اقدامات سریع"), i: "＋", t: pxText("ثبت حافظه جدید"), s: pxText("افزودن اطلاعات شخصی"), run: function () { memNew(); } },
+  { g: pxText("اقدامات سریع"), i: "⚡", t: pxText("شورای هم‌فکری AI"), s: pxText("پرسش همزمان از چند مدل"), run: function () { go("council"); } },
+  { g: pxText("اقدامات سریع"), i: "⇄", t: pxText("آرنا و مقایسه"), s: pxText("تست مستقیم چند مدل"), run: function () { go("compare"); } },
+  { g: pxText("عملیات"), i: "◍", t: pxText("پایش سلامت مدل‌ها"), s: pxText("اجرای Health Check کامل"), run: function () { healthSweep(); } },
+  { g: pxText("عملیات"), i: "↻", t: pxText("پاکسازی کش"), s: pxText("تازه کردن تمام داده‌ها"), run: function () { hardRefresh(); } }
 );
 
 function palette() {
@@ -405,8 +407,8 @@ function palette() {
   const s = document.createElement("div");
   s.className = "modal-sheet";
   s.innerHTML = '<div class="sheet-handle"></div>' +
-    '<div class="flex-between mb-3"><div class="card-t">🔍 جستجوی سریع در پلتفرم</div><button class="btn-icon" onclick="closePalette()">✕</button></div>' +
-    '<input id="palQ" class="input mb-3" placeholder="جستجوی صفحه، مدل، دستور یا پروایدر…" autocomplete="off">' +
+    pxText('<div class="flex-between mb-3"><div class="card-t">🔍 جستجوی سریع در پلتفرم</div><button class="btn-icon" onclick="closePalette()">✕</button></div>') +
+    pxText('<input id="palQ" class="input mb-3" placeholder="جستجوی صفحه، مدل، دستور یا پروایدر…" autocomplete="off">') +
     '<div id="palL" style="max-height:50vh;overflow-y:auto"></div>';
 
   overlay.appendChild(s);
@@ -434,7 +436,7 @@ function paintPalette(qv) {
       '<div style="flex:1"><div class="font-bold text-sm">' + h(c.t) + '</div><div class="text-xs text-muted">' + h(c.s) + '</div></div>' +
       '</div>';
   });
-  if (!local.length) html = '<div class="text-muted text-center py-4">نتیجه‌ای یافت نشد</div>';
+  if (!local.length) html = pxText('<div class="text-muted text-center py-4">نتیجه‌ای یافت نشد</div>');
   box.innerHTML = html;
 }
 window.runCmd = function (i) { const c = CMDS[i]; closePalette(); if (c) c.run(); };
@@ -494,7 +496,7 @@ function setBootMsg(msg) {
   let authed = false;
   if (S.token) {
     try {
-      setBootMsg("بازیابی نشست کاربری…");
+      setBootMsg(pxText("بازیابی نشست کاربری…"));
       const me = await api("/me", { timeout: 3500 });
       S.user = {
         id: me.userId, name: me.name,
@@ -510,13 +512,13 @@ function setBootMsg(msg) {
   }
 
   if (!authed) {
-    setBootMsg("اتصال به تلگرام…");
+    setBootMsg(pxText("اتصال به تلگرام…"));
     const wa = await waitForTG(1500);
     applyTgChrome();
     const initData = (wa && wa.initData) || tgInitData();
     if (initData) {
       try {
-        setBootMsg("احراز هویت ایمن…");
+        setBootMsg(pxText("احراز هویت ایمن…"));
         const r = await api("/auth", { body: { initData: initData }, timeout: 6000 });
         S.token = r.token;
         S.user = r.user;
@@ -533,10 +535,21 @@ function setBootMsg(msg) {
   }
 
   if (!authed) {
-    app.innerHTML = '<div class="boot auth-gate"><div class="boot-logo">P</div><h1>فضای شخصی تو، در تلگرام</h1><p>برای دیدن گفتگوها و حافظه، این صفحه را از دکمهٔ مینی‌اپ داخل بات باز کن.</p><button class="btn pri" onclick="location.reload()">اتصال دوباره</button><span class="tiny">نشست منقضی شده؟ مینی‌اپ را ببند و دوباره باز کن.</span></div>';
+    app.innerHTML = pxText('<div class="boot auth-gate"><div class="boot-logo">P</div><h1>فضای شخصی تو، در تلگرام</h1><p>برای دیدن گفتگوها و حافظه، این صفحه را از دکمهٔ مینی‌اپ داخل بات باز کن.</p><button class="btn pri" onclick="location.reload()">اتصال دوباره</button><span class="tiny">نشست منقضی شده؟ مینی‌اپ را ببند و دوباره باز کن.</span></div>');
     return;
   }
-  setBootMsg("بارگذاری فضای شخصی…");
+  setBootMsg(pxText("بارگذاری فضای شخصی…"));
+  try {
+    const preferences = await api('/preferences');
+    const chosen = preferences && preferences.language;
+    const previousUser = localStorage.getItem('pimx_language_user');
+    const desired = chosen === 'en' ? 'en' : 'fa';
+    if (previousUser !== String(S.user.id) || chosen === 'en' || chosen === 'fa') {
+      localStorage.setItem('pimx_language_user', String(S.user.id));
+      localStorage.setItem('pimx_language', desired);
+      if (desired !== PX_LANGUAGE) { location.reload(); return; }
+    }
+  } catch (e) { console.error('[language preferences]', e); }
   try {
     S.meta = await api("/meta", { timeout: 3500 }).catch(function () { return {}; });
   } catch (e) {}

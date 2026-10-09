@@ -1,3 +1,5 @@
+import { pxText, pxTemplate } from '../i18n/server.js';
+import { withLanguage, savedLanguage } from '../i18n/server.js';
 // ─────────────────────────────────────────────
 // ⚙️ Automation Engine — تسکهای تکرارشونده و Workflowها
 // ─────────────────────────────────────────────
@@ -82,7 +84,7 @@ export async function createTask(env, input, userId = 0) {
 
 export async function updateTask(env, id, patch, userId = 0) {
   const t = await getTask(env, id);
-  if (!t) throw new Error("تسک یافت نشد");
+  if (!t) throw new Error(pxText("تسک یافت نشد"));
   Object.assign(t, patch, { updatedAt: nowIso() });
   await kvPut(env, tKey(id), t);
   await audit(env, { userId, action: "task.update", resource: id });
@@ -108,6 +110,10 @@ export async function taskFromNaturalLanguage(env, text, { userId = 0, chatId = 
 }
 
 export async function runTask(env, task, { notify } = {}) {
+  return withLanguage(await savedLanguage(env, task.userId), () => runLocalizedTask(env, task, { notify }));
+}
+
+async function runLocalizedTask(env, task, { notify } = {}) {
   const t0 = Date.now();
   let output = "", ok = true, error = null;
   try {
@@ -135,7 +141,7 @@ export async function runTask(env, task, { notify } = {}) {
   if (notify && task.chatId) {
     await notify(task.chatId, ok
       ? `⏱ <b>${escapeH(task.name)}</b>\n\n${String(output).slice(0, 3500)}`
-      : `⚠️ <b>${escapeH(task.name)}</b> اجرا نشد: ${escapeH(error || "خطای نامشخص")}`);
+      : pxTemplate`⚠️ <b>${escapeH(task.name)}</b> اجرا نشد: ${escapeH(error || pxText("خطای نامشخص"))}`);
   }
   await audit(env, { userId: task.userId, action: "task.run", resource: task.id, result: ok ? "ok" : "fail" });
   return { ok, output, error };
@@ -194,7 +200,7 @@ function normalizeNode(n) {
 
 export async function updateWorkflow(env, id, patch, userId = 0) {
   const wf = await getWorkflow(env, id);
-  if (!wf) throw new Error("workflow یافت نشد");
+  if (!wf) throw new Error(pxText("workflow یافت نشد"));
   if (patch.nodes) patch.nodes = patch.nodes.map(normalizeNode);
   Object.assign(wf, patch, { updatedAt: nowIso() });
   await kvPut(env, wKey(id), wf);
@@ -220,7 +226,7 @@ export async function workflowFromNaturalLanguage(env, text, userId = 0) {
 // اجرای workflow (گراف خطی/شرطی سبک)
 export async function runWorkflow(env, id, { userId = 0, input = "", onUpdate, notify, chatId } = {}) {
   const wf = await getWorkflow(env, id);
-  if (!wf) throw new Error("workflow یافت نشد");
+  if (!wf) throw new Error(pxText("workflow یافت نشد"));
   const runId = newId("wfrun");
   const run = { id: runId, workflowId: id, name: wf.name, startedAt: nowIso(), status: "running", steps: [], userId };
   await kvPut(env, rKey(runId), run);
@@ -233,7 +239,7 @@ export async function runWorkflow(env, id, { userId = 0, input = "", onUpdate, n
     if (onUpdate) await onUpdate(run);
     try {
       const res = await execNode(env, node, data, { userId, notify, chatId: chatId || userId });
-      if (res?.stop) { step.status = "skip"; step.detail = "شرط برقرار نبود"; break; }
+      if (res?.stop) { step.status = "skip"; step.detail = pxText("شرط برقرار نبود"); break; }
       data = res?.output ?? data;
       step.status = "done";
       step.preview = String(data).slice(0, 200);

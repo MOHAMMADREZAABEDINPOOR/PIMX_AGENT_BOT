@@ -1,3 +1,4 @@
+import { pxText, pxTemplate } from '../i18n/server.js';
 // ─────────────────────────────────────────────
 // 📈 Monitoring, Alerts & Usage — دادههای واقعی
 // ─────────────────────────────────────────────
@@ -129,13 +130,13 @@ export async function healthOverview(env) {
 
 // ── Alerts ────────────────────────────────────
 export const ALERT_TYPES = {
-  providerDown: { label: "پروایدر از کار افتاد" },
-  modelDown: { label: "مدل از کار افتاد" },
-  latency: { label: "تأخیر بالا" },
-  errorRate: { label: "نرخ خطای بالا" },
-  rateLimit: { label: "محدودیت نرخ" },
-  cost: { label: "سقف هزینه" },
-  healthDegraded: { label: "افت سلامت" }
+  providerDown: { get label(){return pxText("پروایدر از کار افتاد")} },
+  modelDown: { get label(){return pxText("مدل از کار افتاد")} },
+  latency: { get label(){return pxText("تأخیر بالا")} },
+  errorRate: { get label(){return pxText("نرخ خطای بالا")} },
+  rateLimit: { get label(){return pxText("محدودیت نرخ")} },
+  cost: { get label(){return pxText("سقف هزینه")} },
+  healthDegraded: { get label(){return pxText("افت سلامت")} }
 };
 
 export async function listAlertRules(env) {
@@ -180,7 +181,7 @@ async function fireAlert(env, event, notify) {
   events.push(ev);
   await kvPut(env, "alerts:events", events.slice(-200), { expirationTtl: 30 * 86400 });
   if (notify && event.chatId) {
-    await notify(event.chatId, `🚨 <b>هشدار: ${ALERT_TYPES[event.type]?.label || event.type}</b>\n\n${event.message}`);
+    await notify(event.chatId, pxTemplate`🚨 <b>هشدار: ${ALERT_TYPES[event.type]?.label || event.type}</b>\n\n${event.message}`);
   }
   return true;
 }
@@ -201,45 +202,45 @@ export async function evaluateAlerts(env, { notify, adminChatId } = {}) {
       for (const p of providers) {
         if (!match(p.id) && !match(p.name)) continue;
         if (p.status === "failed" || (p.enabled && p.status === "degraded" && (p.stats?.fail || 0) > 3)) {
-          if (await fireAlert(env, { type: "providerDown", target: p.id, chatId, message: `پروایدر <b>${p.name}</b> وضعیت ${p.status} دارد.\nآخرین خطا: ${p.lastError || "—"}` }, notify)) fired++;
+          if (await fireAlert(env, { type: "providerDown", target: p.id, chatId, message: pxTemplate`پروایدر <b>${p.name}</b> وضعیت ${p.status} دارد.\nآخرین خطا: ${p.lastError || "—"}` }, notify)) fired++;
         }
       }
     }
     if (rule.type === "modelDown") {
       for (const m of models.filter(x => x.status === "failed" && x.enabled)) {
         if (!match(m.id) && !match(m.apiModelId)) continue;
-        if (await fireAlert(env, { type: "modelDown", target: m.id, chatId, message: `مدل <b>${m.displayName}</b> (${m.providerName}) از کار افتاده.\n${m.lastError || ""}` }, notify)) fired++;
+        if (await fireAlert(env, { type: "modelDown", target: m.id, chatId, message: pxTemplate`مدل <b>${m.displayName}</b> (${m.providerName}) از کار افتاده.\n${m.lastError || ""}` }, notify)) fired++;
       }
     }
     if (rule.type === "latency" && rule.threshold) {
       for (const m of models.filter(x => x.latency && x.latency > rule.threshold && x.enabled)) {
         if (!match(m.id) && !match(m.apiModelId)) continue;
-        if (await fireAlert(env, { type: "latency", target: m.id, chatId, message: `تأخیر مدل <b>${m.displayName}</b> = ${m.latency}ms (حد: ${rule.threshold}ms)` }, notify)) fired++;
+        if (await fireAlert(env, { type: "latency", target: m.id, chatId, message: pxTemplate`تأخیر مدل <b>${m.displayName}</b> = ${m.latency}ms (حد: ${rule.threshold}ms)` }, notify)) fired++;
       }
     }
     if (rule.type === "errorRate" && rule.threshold) {
       for (const m of models.filter(x => (x.errorRate || 0) > rule.threshold && (x.stats?.req || 0) >= 5)) {
         if (!match(m.id) && !match(m.apiModelId)) continue;
-        if (await fireAlert(env, { type: "errorRate", target: m.id, chatId, message: `نرخ خطای مدل <b>${m.displayName}</b> = ${m.errorRate}% (حد: ${rule.threshold}%)` }, notify)) fired++;
+        if (await fireAlert(env, { type: "errorRate", target: m.id, chatId, message: pxTemplate`نرخ خطای مدل <b>${m.displayName}</b> = ${m.errorRate}% (حد: ${rule.threshold}%)` }, notify)) fired++;
       }
     }
     if (rule.type === "cost" && rule.threshold) {
       const monthly = await usageRange(env, 30);
       if (monthly.totals.cost > rule.threshold) {
-        if (await fireAlert(env, { type: "cost", target: "global", chatId, message: `هزینه ۳۰ روز = $${monthly.totals.cost.toFixed(4)} از سقف $${rule.threshold} عبور کرد.` }, notify)) fired++;
+        if (await fireAlert(env, { type: "cost", target: "global", chatId, message: pxTemplate`هزینه ۳۰ روز = $${monthly.totals.cost.toFixed(4)} از سقف $${rule.threshold} عبور کرد.` }, notify)) fired++;
       }
     }
     if (rule.type === "healthDegraded" && rule.threshold) {
       const healthy = models.filter(m => m.status === "healthy").length;
       const pct = models.length ? Math.round((healthy / models.length) * 100) : 100;
       if (pct < rule.threshold) {
-        if (await fireAlert(env, { type: "healthDegraded", target: "global", chatId, message: `فقط ${pct}% مدلها سالماند (حد: ${rule.threshold}%)` }, notify)) fired++;
+        if (await fireAlert(env, { type: "healthDegraded", target: "global", chatId, message: pxTemplate`فقط ${pct}% مدلها سالماند (حد: ${rule.threshold}%)` }, notify)) fired++;
       }
     }
     if (rule.type === "rateLimit") {
       for (const p of providers.filter(x => /429|rate limit/i.test(x.lastError || ""))) {
         if (!match(p.id) && !match(p.name)) continue;
-        if (await fireAlert(env, { type: "rateLimit", target: p.id, chatId, message: `پروایدر <b>${p.name}</b> با محدودیت نرخ مواجه شده.` }, notify)) fired++;
+        if (await fireAlert(env, { type: "rateLimit", target: p.id, chatId, message: pxTemplate`پروایدر <b>${p.name}</b> با محدودیت نرخ مواجه شده.` }, notify)) fired++;
       }
     }
   }

@@ -42,7 +42,7 @@ window.pxIcon = pxIcon;
 
 function responseModesHtml() {
   const selected = (S.preferences || {}).responseMode || 'speed';
-  return [['speed', 'سریع', 'bolt'], ['balanced', 'متعادل', 'models'], ['quality', 'عمیق', 'memory']].map(function (item) {
+  return [['speed', pxText('سریع'), 'bolt'], ['balanced', pxText('متعادل'), 'models'], ['quality', pxText('عمیق'), 'memory']].map(function (item) {
     return '<button type="button" data-mode="' + item[0] + '" class="response-mode' + (selected === item[0] ? ' on' : '') + '" aria-pressed="' + (selected === item[0]) + '"' + act('setResponseMode', item[0]) + '>' + pxIcon(item[2], 15) + item[1] + '</button>';
   }).join('');
 }
@@ -50,7 +50,7 @@ window.setResponseMode = async function (mode) {
   const previous = (S.preferences || {}).responseMode || 'speed';
   S.preferences = Object.assign({}, S.preferences || {}, { responseMode: mode });
   document.querySelectorAll('.response-mode').forEach(function (button) { const active = button.dataset.mode === mode; button.classList.toggle('on', active); button.setAttribute('aria-pressed', String(active)); });
-  try { S.preferences = await api('/preferences', { method: 'PATCH', body: { responseMode: mode } }); bust('preferences'); toast(mode === 'speed' ? 'پاسخ سریع و کوتاه' : mode === 'quality' ? 'پاسخ دقیق‌تر و مفصل‌تر' : 'تعادل سرعت و جزئیات', 'ok'); }
+  try { S.preferences = await api('/preferences', { method: 'PATCH', body: { responseMode: mode } }); bust('preferences'); toast(mode === 'speed' ? pxText('پاسخ سریع و کوتاه') : mode === 'quality' ? pxText('پاسخ دقیق‌تر و مفصل‌تر') : pxText('تعادل سرعت و جزئیات'), 'ok'); }
   catch (e) { S.preferences.responseMode = previous; toast(e.message, 'err'); render(); }
 };
 window.homeAsk = function () { const input = document.getElementById('homePrompt'); const text = (input && input.value || '').trim(); if (text) launchPrompt(text); else go('chat'); };
@@ -63,11 +63,11 @@ window.AFTER.chat = function () {
 };
 
 async function viewBackup() {
-  return '<div class="backup-page"><div class="studio-section-title"><div><span class="studio-eyebrow">اطلاعاتت در اختیار توست</span><h2>حافظه‌ات را همراهت ببر</h2><p>یک فایل برای گفتگوها، حافظه، اسناد و تنظیمات شخصی.</p></div><span class="backup-header-icon">' + pxIcon('backup', 34) + '</span></div>' +
-    '<div class="backup-grid"><section class="backup-card"><span class="backup-step">01 / ذخیره</span><h3>یک نسخه برای خودت</h3><p>اطلاعات کامل حساب را دانلود کن یا مستقیم در گفتگوی خصوصی بات دریافت کن.</p><div class="backup-features"><span>' + pxIcon('chat') + ' تاریخچهٔ گفتگو</span><span>' + pxIcon('memory') + ' حافظه و پروفایل</span><span>' + pxIcon('knowledge') + ' دانش و اسناد</span><span>' + pxIcon('settings') + ' تنظیمات و پرامپت</span></div><button class="btn pri backup-primary" onclick="downloadBackup(\'account\',\'telegram\')">' + pxIcon('chat') + ' ارسال فایل به تلگرام</button><button class="btn sec backup-primary" onclick="downloadBackup(\'account\',\'download\')">' + pxIcon('download') + ' دانلود روی دستگاه</button><div id="backupExportStatus" class="backup-inline-status" role="status" aria-live="polite"></div></section>' +
-    '<section class="backup-card"><span class="backup-step">02 / انتقال</span><h3>اینجا ادامه بده</h3><p>فایل پشتیبان حساب قبلی را انتخاب کن. قبل از انتقال، خلاصهٔ محتوا را می‌بینی.</p><label class="backup-drop" for="backupFile" id="backupDrop">' + pxIcon('upload', 32) + '<strong>فایل پشتیبان را انتخاب کن</strong><span>JSON · حداکثر ۱۸ مگابایت</span><input id="backupFile" type="file" accept=".json,application/json" onchange="inspectBackupFile(this.files[0])"></label><div id="backupPreview" aria-live="polite"><div class="backup-note">' + pxIcon('check') + '<span>اطلاعات فعلی حفظ می‌شود. کارهای خودکار واردشده به صورت متوقف منتقل می‌شوند.</span></div></div></section></div>' +
-    '<div class="backup-explainer"><span class="explainer-number">۱</span><p>در حساب قبلی، پشتیبان را بگیر.</p><span class="explainer-number">۲</span><p>با حساب جدید، بات را باز کن.</p><span class="explainer-number">۳</span><p>فایل را اینجا بازیابی کن یا در بات با کپشن <code>/restore</code> بفرست.</p></div>' +
-    (S.isAdmin ? '<section class="database-card"><span class="database-symbol">' + pxIcon('models', 28) + '</span><div><span class="studio-eyebrow">ویژهٔ ادمین</span><h3>پشتیبان کامل دیتابیس</h3><p>تمام رکوردهای KV و D1، شامل داده‌های همهٔ حساب‌ها و تنظیمات ذخیره‌شده. کلیدهای محیطی Cloudflare داخل این فایل نیستند.</p></div><button class="btn sec" onclick="downloadBackup(\'database\',\'telegram\')">' + pxIcon('download') + ' دریافت در تلگرام</button><button class="btn gho" onclick="downloadBackup(\'database\',\'download\')">دانلود فایل</button></section>' : '') + '</div>';
+  return pxText('<div class="backup-page"><div class="studio-section-title"><div><span class="studio-eyebrow">اطلاعاتت در اختیار توست</span><h2>حافظه‌ات را همراهت ببر</h2><p>یک فایل برای گفتگوها، حافظه، اسناد و تنظیمات شخصی.</p></div><span class="backup-header-icon">') + pxIcon('backup', 34) + '</span></div>' +
+    pxText('<div class="backup-grid"><section class="backup-card"><span class="backup-step">01 / ذخیره</span><h3>یک نسخه برای خودت</h3><p>اطلاعات کامل حساب را دانلود کن یا مستقیم در گفتگوی خصوصی بات دریافت کن.</p><div class="backup-features"><span>') + pxIcon('chat') + pxText(' تاریخچهٔ گفتگو</span><span>') + pxIcon('memory') + pxText(' حافظه و پروفایل</span><span>') + pxIcon('knowledge') + pxText(' دانش و اسناد</span><span>') + pxIcon('settings') + pxText(' تنظیمات و پرامپت</span></div><button class="btn pri backup-primary" onclick="downloadBackup(\'account\',\'telegram\')">') + pxIcon('chat') + pxText(' ارسال فایل به تلگرام</button><button class="btn sec backup-primary" onclick="downloadBackup(\'account\',\'download\')">') + pxIcon('download') + pxText(' دانلود روی دستگاه</button><div id="backupExportStatus" class="backup-inline-status" role="status" aria-live="polite"></div></section>') +
+    pxText('<section class="backup-card"><span class="backup-step">02 / انتقال</span><h3>اینجا ادامه بده</h3><p>فایل پشتیبان حساب قبلی را انتخاب کن. قبل از انتقال، خلاصهٔ محتوا را می‌بینی.</p><label class="backup-drop" for="backupFile" id="backupDrop">') + pxIcon('upload', 32) + pxText('<strong>فایل پشتیبان را انتخاب کن</strong><span>JSON · حداکثر ۱۸ مگابایت</span><input id="backupFile" type="file" accept=".json,application/json" onchange="inspectBackupFile(this.files[0])"></label><div id="backupPreview" aria-live="polite"><div class="backup-note">') + pxIcon('check') + pxText('<span>اطلاعات فعلی حفظ می‌شود. کارهای خودکار واردشده به صورت متوقف منتقل می‌شوند.</span></div></div></section></div>') +
+    pxText('<div class="backup-explainer"><span class="explainer-number">۱</span><p>در حساب قبلی، پشتیبان را بگیر.</p><span class="explainer-number">۲</span><p>با حساب جدید، بات را باز کن.</p><span class="explainer-number">۳</span><p>فایل را اینجا بازیابی کن یا در بات با کپشن <code>/restore</code> بفرست.</p></div>') +
+    (S.isAdmin ? '<section class="database-card"><span class="database-symbol">' + pxIcon('models', 28) + pxText('</span><div><span class="studio-eyebrow">ویژهٔ ادمین</span><h3>پشتیبان کامل دیتابیس</h3><p>تمام رکوردهای KV و D1، شامل داده‌های همهٔ حساب‌ها و تنظیمات ذخیره‌شده. کلیدهای محیطی Cloudflare داخل این فایل نیستند.</p></div><button class="btn sec" onclick="downloadBackup(\'database\',\'telegram\')">') + pxIcon('download') + pxText(' دریافت در تلگرام</button><button class="btn gho" onclick="downloadBackup(\'database\',\'download\')">دانلود فایل</button></section>') : '') + '</div>';
 }
 VIEWS.backup = viewBackup;
 
@@ -76,7 +76,7 @@ window.downloadBackup = async function (scope, delivery) {
   if (backupBusy) return;
   backupBusy = true;
   const status = document.getElementById('backupExportStatus');
-  if (status) status.textContent = 'در حال جمع‌آوری و آماده‌سازی فایل…';
+  if (status) status.textContent = pxText('در حال جمع‌آوری و آماده‌سازی فایل…');
   document.querySelectorAll('.backup-page button').forEach(function (button) { button.disabled = true; });
   try {
     const archive = await api('/backup/export', { body: { scope: scope, delivery: delivery }, long: true });
@@ -84,7 +84,7 @@ window.downloadBackup = async function (scope, delivery) {
       const url = URL.createObjectURL(new Blob([JSON.stringify(archive)], { type: 'application/json' }));
       const a = document.createElement('a'); a.href = url; a.download = 'pimx-' + scope + '-' + new Date().toISOString().slice(0, 10) + '.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 15000);
     }
-    const message = delivery === 'telegram' ? 'فایل در گفتگوی خصوصی بات ارسال شد.' : 'فایل پشتیبان آمادهٔ دانلود شد.';
+    const message = delivery === 'telegram' ? pxText('فایل در گفتگوی خصوصی بات ارسال شد.') : pxText('فایل پشتیبان آمادهٔ دانلود شد.');
     if (status) status.textContent = message;
     toast(message, 'ok');
   } catch (e) { if (status) status.textContent = e.message; toast(e.message, 'err'); }
@@ -96,26 +96,26 @@ window.inspectBackupFile = async function (file) {
   const generation = ++backupInspection;
   const box = document.getElementById('backupPreview');
   try {
-    if (file.size > 18 * 1024 * 1024) throw new Error('فایل باید کمتر از ۱۸ مگابایت باشد.');
-    box.innerHTML = '<div class="backup-inline-status">در حال بررسی فایل…</div>';
+    if (file.size > 18 * 1024 * 1024) throw new Error(pxText('فایل باید کمتر از ۱۸ مگابایت باشد.'));
+    box.innerHTML = pxText('<div class="backup-inline-status">در حال بررسی فایل…</div>');
     const archive = JSON.parse(await file.text());
     const summary = await api('/backup/inspect', { body: { archive: archive }, long: true });
     if (generation !== backupInspection) return;
     pendingBackup = archive;
-    box.innerHTML = '<div class="backup-preview"><div class="row gap8">' + pxIcon('check') + '<strong>فایل معتبر است</strong></div><span class="backup-file-name">' + h(file.name) + '</span><div class="backup-counts"><span><b>' + n(summary.conversations) + '</b> گفتگو</span><span><b>' + n(summary.memories) + '</b> بخش حافظه</span><span><b>' + n(summary.documents) + '</b> سند</span></div><p>' + n(summary.records) + ' رکورد به حساب فعلی منتقل می‌شود. داده‌های دیگر کاربران منتقل نمی‌شود.</p><button class="btn pri backup-primary" onclick="confirmBackupRestore()">تأیید و انتقال به حساب من ' + pxIcon('arrow') + '</button></div>';
-  } catch (e) { if (generation === backupInspection) box.innerHTML = '<div class="backup-error" role="alert">' + h(e instanceof SyntaxError ? 'فایل JSON قابل خواندن نیست.' : e.message) + '</div>'; }
+    box.innerHTML = '<div class="backup-preview"><div class="row gap8">' + pxIcon('check') + pxText('<strong>فایل معتبر است</strong></div><span class="backup-file-name">') + h(file.name) + '</span><div class="backup-counts"><span><b>' + n(summary.conversations) + pxText('</b> گفتگو</span><span><b>') + n(summary.memories) + pxText('</b> بخش حافظه</span><span><b>') + n(summary.documents) + pxText('</b> سند</span></div><p>') + n(summary.records) + pxText(' رکورد به حساب فعلی منتقل می‌شود. داده‌های دیگر کاربران منتقل نمی‌شود.</p><button class="btn pri backup-primary" onclick="confirmBackupRestore()">تأیید و انتقال به حساب من ') + pxIcon('arrow') + '</button></div>';
+  } catch (e) { if (generation === backupInspection) box.innerHTML = '<div class="backup-error" role="alert">' + h(e instanceof SyntaxError ? pxText('فایل JSON قابل خواندن نیست.') : e.message) + '</div>'; }
 };
 window.confirmBackupRestore = async function () {
   if (!pendingBackup || backupBusy) return;
   backupBusy = true;
   const box = document.getElementById('backupPreview');
-  box.innerHTML = '<div class="backup-inline-status">در حال انتقال اطلاعات…</div>';
+  box.innerHTML = pxText('<div class="backup-inline-status">در حال انتقال اطلاعات…</div>');
   try {
     const result = await api('/backup/restore', { body: { archive: pendingBackup, confirm: true }, long: true });
     pendingBackup = null; bust(); S.chat.id = null; S.chat.loadedId = null; S.chat.messages = []; S.deadConvs = {};
-    box.innerHTML = '<div class="backup-preview"><strong>✓ اطلاعاتت منتقل شد</strong><p>' + n(result.imported) + ' رکورد ذخیره شد. حالا می‌توانی گفتگوها را ادامه بدهی.</p><button class="btn pri" onclick="go(\'chat\')">ادامهٔ گفتگو ' + pxIcon('arrow') + '</button></div>';
-    toast('انتقال کامل شد', 'ok');
-  } catch (e) { box.innerHTML = '<div class="backup-error">' + h(e.message) + '</div><button class="btn sec" onclick="confirmBackupRestore()">تلاش دوباره</button>'; }
+    box.innerHTML = pxText('<div class="backup-preview"><strong>✓ اطلاعاتت منتقل شد</strong><p>') + n(result.imported) + pxText(' رکورد ذخیره شد. حالا می‌توانی گفتگوها را ادامه بدهی.</p><button class="btn pri" onclick="go(\'chat\')">ادامهٔ گفتگو ') + pxIcon('arrow') + '</button></div>';
+    toast(pxText('انتقال کامل شد'), 'ok');
+  } catch (e) { box.innerHTML = '<div class="backup-error">' + h(e.message) + pxText('</div><button class="btn sec" onclick="confirmBackupRestore()">تلاش دوباره</button>'); }
   finally { backupBusy = false; }
 };
 window.AFTER.backup = function () {

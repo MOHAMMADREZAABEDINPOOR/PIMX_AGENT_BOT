@@ -1,8 +1,11 @@
+import { pxText, pxTemplate } from '../i18n/server.js';
 // ─────────────────────────────────────────────
 // 🌐 REST API for the Mini App — روی همان دادههای ربات
 // همه پاسخها: { ok, data } یا { ok:false, error, hint }
 // ─────────────────────────────────────────────
 import { authenticate, verifyInitData, issueSession, rateLimitApi } from "./auth.js";
+import { withLanguage, setCurrentLanguage, savedLanguage, currentLanguage } from '../i18n/server.js';
+import { validLanguage } from '../i18n/shared.js';
 import { kvGet, kvPut } from "../core/kv.js";
 import { exportBackup, inspectBackup, restoreBackup } from "../ops/portable-backup.js";
 import { responseOptions } from "../core/preferences.js";
@@ -181,6 +184,10 @@ function stripWebhookSecret(webhook) {
 }
 
 export async function handleApi(request, env, botToken, adminId) {
+  return withLanguage(request.headers.get('X-PIMX-Language'), () => handleLocalizedApi(request, env, botToken, adminId));
+}
+
+async function handleLocalizedApi(request, env, botToken, adminId) {
   const url = new URL(request.url);
   const path = url.pathname.replace(/^\/api/, "") || "/";
   const method = request.method.toUpperCase();
@@ -191,7 +198,7 @@ export async function handleApi(request, env, botToken, adminId) {
       headers: {
         "Access-Control-Allow-Origin": request.headers.get("origin") || "*",
         "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Telegram-Init-Data,X-Admin-Token",
+        "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Telegram-Init-Data,X-Admin-Token,X-PIMX-Language",
         "Access-Control-Max-Age": "86400"
       }
     });
@@ -201,7 +208,7 @@ export async function handleApi(request, env, botToken, adminId) {
   if (path === "/auth" && method === "POST") {
     const body = await readBody(request);
     const v = await verifyInitData(body.initData, botToken);
-    if (!v.ok) return fail(v.error, 401, "Mini App را از داخل تلگرام باز کنید (دکمه منو یا /app)");
+    if (!v.ok) return fail(v.error, 401, pxText("Mini App را از داخل تلگرام باز کنید (دکمه منو یا /app)"));
     const token = await issueSession(env, v.user);
     await kvPut(env, `profile:${v.user.id}`, {
       firstName: v.user.first_name || "",
@@ -233,10 +240,11 @@ export async function handleApi(request, env, botToken, adminId) {
   }
 
   const auth = await authenticate(request, env, botToken);
-  if (!auth.ok) return fail(auth.error, auth.status || 401, "برای دسترسی، Mini App را از تلگرام باز کنید");
+  if (!auth.ok) return fail(auth.error, auth.status || 401, pxText("برای دسترسی، Mini App را از تلگرام باز کنید"));
   const userId = auth.userId;
+  setCurrentLanguage(await savedLanguage(env, userId) || request.headers.get('X-PIMX-Language'));
   const admin = Number(userId) === Number(adminId);
-  if (rateLimitApi(userId)) return fail("تعداد درخواستها زیاد است — یک دقیقه صبر کنید", 429);
+  if (rateLimitApi(userId)) return fail(pxText("تعداد درخواستها زیاد است — یک دقیقه صبر کنید"), 429);
 
   const body = ["POST", "PATCH", "PUT", "DELETE"].includes(method) ? await readBody(request) : {};
   const q = Object.fromEntries(url.searchParams.entries());
@@ -247,24 +255,26 @@ export async function handleApi(request, env, botToken, adminId) {
     // Raw database snapshots remain restricted to the configured admin.
     if (path === "/backup/export" && method === "POST") {
       const scope = body.scope === "database" ? "database" : "account";
-      if (scope === "database" && !admin) return fail("فقط ادمین می‌تواند کل دیتابیس را دریافت کند.", 403);
+      if (scope === "database" && !admin) return fail(pxText("فقط ادمین می‌تواند کل دیتابیس را دریافت کند."), 403);
       const archive = await exportBackup(env, userId, { scope, adminId });
       if (body.delivery === "telegram") {
-        const result = await ctx.tg.sendDocument(userId, `pimx-${scope}-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(archive), "پشتیبان PIMX · برای بازیابی روی حساب دیگر از /restore استفاده کنید.");
-        if (!result?.ok) return fail("ارسال فایل به تلگرام ناموفق بود. بات را استارت کنید و دوباره تلاش کنید.", 502);
+        const result = await ctx.tg.sendDocument(userId, `pimx-${scope}-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(archive), pxText("پشتیبان PIMX · برای بازیابی روی حساب دیگر از /restore استفاده کنید."));
+        if (!result?.ok) return fail(pxText("ارسال فایل به تلگرام ناموفق بود. بات را استارت کنید و دوباره تلاش کنید."), 502);
         return ok({ sent: true, recordCount: archive.recordCount });
       }
       return ok(archive);
     }
     if (path === "/backup/inspect" && method === "POST") return ok(await inspectBackup(body.archive));
     if (path === "/backup/restore" && method === "POST") {
-      if (body.confirm !== true) return fail("ابتدا پیش‌نمایش بازیابی را تأیید کنید.", 400);
+      if (body.confirm !== true) return fail(pxText("ابتدا پیش‌نمایش بازیابی را تأیید کنید."), 400);
       return ok(await restoreBackup(env, body.archive, userId));
     }
     if (path === "/preferences" && method === "GET") return ok(await kvGet(env, `preferences:${userId}`, { responseMode: "speed" }));
     if (path === "/preferences" && method === "PATCH") {
+      if (Object.hasOwn(body, 'language') && !validLanguage(body.language)) return fail('Supported languages: fa, en', 400);
       const current = await kvGet(env, `preferences:${userId}`, { responseMode: "speed" });
       const next = { ...current, responseMode: ["speed", "balanced", "quality"].includes(body.responseMode) ? body.responseMode : current.responseMode };
+      if (validLanguage(body.language)) next.language = body.language;
       await kvPut(env, `preferences:${userId}`, next);
       return ok(next);
     }
@@ -369,14 +379,14 @@ export async function handleApi(request, env, botToken, adminId) {
       })));
     }
     if (path === "/providers" && method === "POST") {
-      if (!body.baseUrl) return fail("Base URL لازم است");
+      if (!body.baseUrl) return fail(pxText("Base URL لازم است"));
       const p = await createProvider(env, body, userId);
       return ok(publicProvider(p));
     }
     if (path === "/providers/bulk" && method === "POST") {
       const keys = Array.isArray(body.keys) ? body.keys : parseKeys(body.keys || "");
-      if (!body.baseUrl) return fail("Base URL لازم است");
-      if (!keys.length) return fail("هیچ کلید معتبری پیدا نشد");
+      if (!body.baseUrl) return fail(pxText("Base URL لازم است"));
+      if (!keys.length) return fail(pxText("هیچ کلید معتبری پیدا نشد"));
       const created = await bulkCreateProviders(env, { ...body, keys }, userId);
       return ok(created.map(publicProvider));
     }
@@ -388,12 +398,12 @@ export async function handleApi(request, env, botToken, adminId) {
       });
     }
     if (path === "/providers/diagnose" && method === "POST") {
-      if (!body.baseUrl) return fail("Base URL لازم است");
+      if (!body.baseUrl) return fail(pxText("Base URL لازم است"));
       return ok(await diagnose(body));
     }
     if ((m = match(path, "/providers/:id")) && method === "GET") {
       const p = await getProvider(env, m.id);
-      if (!p) return fail("پروایدر یافت نشد", 404);
+      if (!p) return fail(pxText("پروایدر یافت نشد"), 404);
       const models = await listModels(env, { providerId: p.id });
       return ok({ ...publicProvider(p), health: providerHealth(p), models: models.map(slimModel) });
     }
@@ -403,14 +413,14 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/providers/:id")) && method === "DELETE") {
       const p = await getProvider(env, m.id);
-      if (!p) return fail("پروایدر یافت نشد", 404);
+      if (!p) return fail(pxText("پروایدر یافت نشد"), 404);
       if (q.cascade !== "false") await deleteModelsByProvider(env, m.id, userId);
       await deleteProvider(env, m.id, userId);
       return ok({ deleted: true, provider: p.name });
     }
     if ((m = match(path, "/providers/:id/test")) && method === "POST") {
       const p = await getProvider(env, m.id);
-      if (!p) return fail("پروایدر یافت نشد", 404);
+      if (!p) return fail(pxText("پروایدر یافت نشد"), 404);
       const { plain } = await pickKey(env, p);
       const report = await diagnose({ baseUrl: p.baseUrl, apiKey: plain, format: p.format, auth: p.auth, authHeader: p.authHeader, authQuery: p.authQuery, headers: p.headers, model: body.model });
       const fresh = await getProvider(env, m.id);
@@ -446,7 +456,7 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/providers/:id/keys")) && method === "POST") {
       const keys = Array.isArray(body.keys) ? body.keys : parseKeys(body.keys || body.apiKey || "");
-      if (!keys.length) return fail("کلیدی ارسال نشد");
+      if (!keys.length) return fail(pxText("کلیدی ارسال نشد"));
       const p = await updateProvider(env, m.id, { apiKeys: keys }, userId);
       return ok(publicProvider(p));
     }
@@ -457,15 +467,15 @@ export async function handleApi(request, env, botToken, adminId) {
     if ((m = match(path, "/providers/:id/keys/:keyId/health")) && method === "GET") {
       const { getKeyHealth } = await import("../gateway/providers.js");
       const p = await getProvider(env, m.id);
-      if (!p) return fail("پروایدر یافت نشد", 404);
+      if (!p) return fail(pxText("پروایدر یافت نشد"), 404);
       const key = p.keys.find(k => k.id === m.keyId);
-      if (!key) return fail("کلید یافت نشد", 404);
+      if (!key) return fail(pxText("کلید یافت نشد"), 404);
       return ok(getKeyHealth(key));
     }
     if ((m = match(path, "/providers/:id/keys/health")) && method === "GET") {
       const { getKeyHealth } = await import("../gateway/providers.js");
       const p = await getProvider(env, m.id);
-      if (!p) return fail("پروایدر یافت نشد", 404);
+      if (!p) return fail(pxText("پروایدر یافت نشد"), 404);
       const healthStats = (p.keys || []).map(k => getKeyHealth(k));
       return ok({ provider: m.id, keys: healthStats });
     }
@@ -476,9 +486,9 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/providers/:id/keys/:keyId/reset-cooldown")) && method === "POST") {
       const p = await getProvider(env, m.id);
-      if (!p) return fail("پروایدر یافت نشد", 404);
+      if (!p) return fail(pxText("پروایدر یافت نشد"), 404);
       const key = p.keys.find(k => k.id === m.keyId);
-      if (!key) return fail("کلید یافت نشد", 404);
+      if (!key) return fail(pxText("کلید یافت نشد"), 404);
       key.cooldownUntil = null;
       key.status = key.status === "rate_limited" ? "unknown" : key.status;
       await saveProvider(env, p);
@@ -569,7 +579,7 @@ export async function handleApi(request, env, botToken, adminId) {
     // ─────────────────────────────────────────────
     if (path === "/tools" && method === "GET") return ok(listTools({ includeDangerous: q.includeDangerous === "true" }));
     if (path === "/tools/run" && method === "POST") {
-      if (!body.tool) return fail("نام ابزار لازم است");
+      if (!body.tool) return fail(pxText("نام ابزار لازم است"));
       const r = await runTool(env, body.tool, body.args || {}, { userId, confirmed: !!body.confirmed });
       return r.ok ? ok(r) : fail(r.error, r.needsConfirmation ? 428 : 400);
     }
@@ -632,9 +642,9 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if (path === "/models" && method === "POST") {
       const p = await getProvider(env, body.providerId);
-      if (!p) return fail("providerId نامعتبر است");
+      if (!p) return fail(pxText("providerId نامعتبر است"));
       const ids = body.models?.length ? body.models : (body.apiModelId ? [body.apiModelId] : parseLines(body.bulk));
-      if (!ids.length) return fail("شناسه مدل لازم است");
+      if (!ids.length) return fail(pxText("شناسه مدل لازم است"));
       const created = [];
       for (const id of ids) {
         const { model } = await upsertModel(env, p, id, {
@@ -654,10 +664,10 @@ export async function handleApi(request, env, botToken, adminId) {
     if (path === "/models/bulk" && method === "POST") {
       const action = body.action;
       const ids = body.ids || [];
-      if (!ids.length && !body.filter) return fail("مدلی انتخاب نشده");
+      if (!ids.length && !body.filter) return fail(pxText("مدلی انتخاب نشده"));
       let targets = ids.length ? (await Promise.all(ids.map(id => getModel(env, id)))).filter(Boolean) : await listModels(env, body.filter || {});
       if (body.filter?.unhealthy) targets = targets.filter(x => x.status === "failed" || (x.errorRate || 0) > 50);
-      if (!targets.length) return fail("مدلی مطابق انتخاب پیدا نشد");
+      if (!targets.length) return fail(pxText("مدلی مطابق انتخاب پیدا نشد"));
       switch (action) {
         case "enable": case "disable": {
           for (const t of targets) { t.enabled = action === "enable"; await saveModel(env, t); }
@@ -695,23 +705,23 @@ export async function handleApi(request, env, botToken, adminId) {
         case "export":
           return ok({ action, models: targets.map(t => ({ providerId: t.providerId, apiModelId: t.apiModelId, displayName: t.displayName, contextWindow: t.contextWindow, pricing: t.pricing, tags: t.tags })) });
         default:
-          return fail(`action نامعتبر: ${action}`);
+          return fail(pxTemplate`action نامعتبر: ${action}`);
       }
     }
     if (path === "/models/benchmark" && method === "POST") {
       const ids = body.ids || body.modelIds || [];
-      if (!ids.length) return fail("مدلی انتخاب نشده");
+      if (!ids.length) return fail(pxText("مدلی انتخاب نشده"));
       const run = await runBenchmark(env, { modelIds: ids.slice(0, 12), tasks: body.tasks || QUICK_TASKS, label: body.label, userId });
       return ok(run);
     }
     if (path === "/models/compare" && method === "POST") {
       const ids = body.ids || [];
-      if (ids.length < 2) return fail("حداقل دو مدل لازم است");
+      if (ids.length < 2) return fail(pxText("حداقل دو مدل لازم است"));
       return ok(await compareModels(env, ids.slice(0, 5), body.tasks || QUICK_TASKS));
     }
     if ((m = match(path, "/models/:id")) && method === "GET") {
       const model = await getModel(env, m.id);
-      if (!model) return fail("مدل یافت نشد", 404);
+      if (!model) return fail(pxText("مدل یافت نشد"), 404);
       const weights = await getWeights(env);
       const all = await listModels(env);
       const cfg = await getRoutingConfig(env);
@@ -729,7 +739,7 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/models/:id")) && method === "PATCH") {
       const model = await getModel(env, m.id);
-      if (!model) return fail("مدل یافت نشد", 404);
+      if (!model) return fail(pxText("مدل یافت نشد"), 404);
       for (const k of ["displayName", "enabled", "contextWindow", "tags", "pricing", "favorite", "weight"]) {
         if (body[k] !== undefined) model[k] = body[k];
       }
@@ -743,7 +753,7 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/models/:id")) && method === "DELETE") {
       const done = await deleteModel(env, m.id, userId);
-      return done ? ok({ deleted: true }) : fail("مدل یافت نشد", 404);
+      return done ? ok({ deleted: true }) : fail(pxText("مدل یافت نشد"), 404);
     }
     if ((m = match(path, "/models/:id/test")) && method === "POST") {
       const r = await testModel(env, m.id, body.tests || DEFAULT_TESTS, userId);
@@ -751,7 +761,7 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/models/:id/capabilities")) && method === "GET") {
       const model = await getModel(env, m.id);
-      if (!model) return fail("مدل یافت نشد", 404);
+      if (!model) return fail(pxText("مدل یافت نشد"), 404);
       // Return capabilities organized by category
       const { CAPABILITY_CATEGORIES } = await import("../gateway/models.js");
       const organized = {};
@@ -770,10 +780,10 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/models/:id/run")) && method === "POST") {
       const model = await getModel(env, m.id);
-      if (!model) return fail("مدل یافت نشد", 404);
+      if (!model) return fail(pxText("مدل یافت نشد"), 404);
       const messages = body.messages || [
         ...(body.system ? [{ role: "system", content: body.system }] : []),
-        { role: "user", content: body.prompt || "سلام" }
+        { role: "user", content: body.prompt || pxText("سلام") }
       ];
       const t0 = Date.now();
       try {
@@ -783,7 +793,7 @@ export async function handleApi(request, env, botToken, adminId) {
         });
         return ok({ text: res.text, model: res.model, latency: res.latency, promptTokens: res.promptTokens, completionTokens: res.completionTokens, cost: res.cost, failover: res.failover, attempts: res.attempts });
       } catch (e) {
-        return fail(e, 502, `${Date.now() - t0}ms طول کشید — جزئیات خطا در پیام آمده`);
+        return fail(e, 502, pxTemplate`${Date.now() - t0}ms طول کشید — جزئیات خطا در پیام آمده`);
       }
     }
 
@@ -799,7 +809,7 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/models/:id/reliability")) && method === "GET") {
       const model = await getModel(env, m.id);
-      if (!model) return fail("مدل یافت نشد", 404);
+      if (!model) return fail(pxText("مدل یافت نشد"), 404);
       const reliabilityScore = getModelReliability(model);
       return ok({
         modelId: model.id,
@@ -848,15 +858,16 @@ export async function handleApi(request, env, botToken, adminId) {
     // ── chat ────────────────────────────────
     if (path === "/chat" && method === "POST") {
       const response = await responseOptions(env, userId, body);
-      const messages = body.messages?.length ? body.messages : [{ role: "user", content: body.prompt || "" }];
-      if (!messages.some(x => x.content)) return fail("پیام خالی است");
+      const messages = body.messages?.length ? [...body.messages] : [{ role: "user", content: body.prompt || "" }];
+      messages.unshift({ role: 'system', content: `Account language: ${currentLanguage() === 'en' ? 'English' : 'Persian'}. Respond in this language unless the user explicitly requests a different target language.` });
+      if (!messages.some(x => x.content)) return fail(pxText("پیام خالی است"));
       // optional conversation persistence for Mini App
       let convId = body.conversationId || null;
       if (body.save !== false) {
         convId = convId || newId("conv");
         const ckey = `conv:${userId}:${convId}`;
         const conv = await kvGet(env, ckey, null) || {
-          id: convId, userId, title: "گفتگوی جدید", messages: [], createdAt: nowIso(), updatedAt: nowIso(),
+          id: convId, userId, title: pxText("گفتگوی جدید"), messages: [], createdAt: nowIso(), updatedAt: nowIso(),
           pinned: false, favorite: false, folder: body.folder || "default", archived: false
         };
         const userMsg = messages.filter(x => x.role === "user").slice(-1)[0];
@@ -880,9 +891,9 @@ export async function handleApi(request, env, botToken, adminId) {
             model: res.model, modelId: res.modelId, provider: res.providerName,
             latency: res.latency, ts: nowIso()
           });
-          if (conv.title === "گفتگوی جدید" && conv.messages.length >= 2) {
+          if (["گفتگوی جدید", pxText("گفتگوی جدید")].includes(conv.title) && conv.messages.length >= 2) {
             const first = conv.messages.find(m => m.role === "user")?.content || "";
-            conv.title = String(first).replace(/\s+/g, " ").slice(0, 48) || "گفتگو";
+            conv.title = String(first).replace(/\s+/g, " ").slice(0, 48) || pxText("گفتگو");
           }
           conv.updatedAt = nowIso();
           await kvPut(env, ckey, conv);
@@ -895,8 +906,9 @@ export async function handleApi(request, env, botToken, adminId) {
     if (path === "/chat/stream" && method === "POST") {
       const response = await responseOptions(env, userId, body);
       const { streamCompletion, createSSEResponse } = await import("../gateway/streaming.js");
-      const messages = body.messages?.length ? body.messages : [{ role: "user", content: body.prompt || "" }];
-      if (!messages.some(x => x.content)) return fail("پیام خالی است");
+      const messages = body.messages?.length ? [...body.messages] : [{ role: "user", content: body.prompt || "" }];
+      messages.unshift({ role: 'system', content: `Account language: ${currentLanguage() === 'en' ? 'English' : 'Persian'}. Respond in this language unless the user explicitly requests a different target language.` });
+      if (!messages.some(x => x.content)) return fail(pxText("پیام خالی است"));
       
       // Handle conversation persistence
       let convId = body.conversationId || null;
@@ -904,7 +916,7 @@ export async function handleApi(request, env, botToken, adminId) {
         convId = convId || newId("conv");
         const ckey = `conv:${userId}:${convId}`;
         const conv = await kvGet(env, ckey, null) || {
-          id: convId, userId, title: "گفتگوی جدید", messages: [], createdAt: nowIso(), updatedAt: nowIso(),
+          id: convId, userId, title: pxText("گفتگوی جدید"), messages: [], createdAt: nowIso(), updatedAt: nowIso(),
           pinned: false, favorite: false, folder: body.folder || "default", archived: false
         };
         const userMsg = messages.filter(x => x.role === "user").slice(-1)[0];
@@ -947,7 +959,7 @@ export async function handleApi(request, env, botToken, adminId) {
             });
             if (conv.title === "گفتگوی جدید" && conv.messages.length >= 2) {
               const first = conv.messages.find(x => x.role === "user")?.content || "";
-              conv.title = String(first).replace(/\s+/g, " ").slice(0, 48) || "گفتگو";
+              conv.title = String(first).replace(/\s+/g, " ").slice(0, 48) || pxText("گفتگو");
             }
             conv.updatedAt = nowIso();
             await kvPut(env, ckey, conv);
@@ -997,7 +1009,7 @@ export async function handleApi(request, env, botToken, adminId) {
       }
       const id = newId("conv");
       const conv = {
-        id, userId, title: String(body.title || "گفتگوی جدید").slice(0, 80),
+        id, userId, title: String(body.title || pxText("گفتگوی جدید")).slice(0, 80),
         messages: [], createdAt: nowIso(), updatedAt: nowIso(),
         pinned: false, favorite: false, folder: body.folder || "default", archived: false
       };
@@ -1035,14 +1047,14 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/conversations/:id")) && method === "GET") {
       const tombs = await kvGet(env, `convtomb:${userId}`, []);
-      if ((tombs || []).indexOf(m.id) >= 0) return fail("گفتگو یافت نشد", 404);
+      if ((tombs || []).indexOf(m.id) >= 0) return fail(pxText("گفتگو یافت نشد"), 404);
       const conv = await kvGet(env, `conv:${userId}:${m.id}`, null);
-      if (!conv || conv.deleted) return fail("گفتگو یافت نشد", 404);
+      if (!conv || conv.deleted) return fail(pxText("گفتگو یافت نشد"), 404);
       return ok(conv);
     }
     if ((m = match(path, "/conversations/:id")) && method === "PATCH") {
       const conv = await kvGet(env, `conv:${userId}:${m.id}`, null);
-      if (!conv || conv.deleted) return fail("گفتگو یافت نشد", 404);
+      if (!conv || conv.deleted) return fail(pxText("گفتگو یافت نشد"), 404);
       if (body.title !== undefined) conv.title = String(body.title).slice(0, 80);
       if (body.pinned !== undefined) conv.pinned = !!body.pinned;
       if (body.favorite !== undefined) conv.favorite = !!body.favorite;
@@ -1073,7 +1085,7 @@ export async function handleApi(request, env, botToken, adminId) {
       return ok(await estimateCouncil(env, body));
     }
     if (path === "/council/run" && method === "POST") {
-      if (!body.question && !body.goal) return fail("سوال لازم است");
+      if (!body.question && !body.goal) return fail(pxText("سوال لازم است"));
       try {
         const run = await runCouncil(env, {
           question: body.question || body.goal,
@@ -1116,7 +1128,7 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/council/runs/:id")) && method === "GET") {
       const r = await getCouncilRun(env, m.id);
-      return r ? ok(r) : fail("اجرای Council یافت نشد", 404);
+      return r ? ok(r) : fail(pxText("اجرای Council یافت نشد"), 404);
     }
     if (path === "/council/configs" && method === "GET") return ok(await listCouncilConfigs(env, userId));
     if (path === "/council/configs" && method === "POST") return ok(await saveCouncilConfig(env, body, userId));
@@ -1133,7 +1145,7 @@ export async function handleApi(request, env, botToken, adminId) {
       return ok(diversity);
     }
     if (path === "/council/plan" && method === "POST") {
-      if (!body.question) return fail("سوال برای برنامه‌ریزی لازم است");
+      if (!body.question) return fail(pxText("سوال برای برنامه‌ریزی لازم است"));
       const plan = planCouncil(body.question, {
         maxCost: body.maxCost || body.costBudget,
         maxModels: body.maxModels,
@@ -1144,9 +1156,9 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/council/runs/:id/quality")) && method === "GET") {
       const run = await getCouncilRun(env, m.id);
-      if (!run) return fail("اجرای Council یافت نشد", 404);
+      if (!run) return fail(pxText("اجرای Council یافت نشد"), 404);
       if (!run.synthesis || !run.synthesis.quality) {
-        return fail("تحلیل کیفیت برای این اجرا موجود نیست", 404);
+        return fail(pxText("تحلیل کیفیت برای این اجرا موجود نیست"), 404);
       }
       return ok({
         runId: run.id,
@@ -1177,7 +1189,7 @@ export async function handleApi(request, env, botToken, adminId) {
       return ok(template);
     }
     if (path === "/council/templates" && method === "POST") {
-      if (!body.name) return fail("نام template لازم است");
+      if (!body.name) return fail(pxText("نام template لازم است"));
       const template = await createCouncilTemplate(env, body, userId);
       return ok(template);
     }
@@ -1220,9 +1232,9 @@ export async function handleApi(request, env, botToken, adminId) {
 
     // ── NL infrastructure control ───────────
     if (path === "/nl" && method === "POST") {
-      if (!body.text) return fail("متن دستور لازم است");
+      if (!body.text) return fail(pxText("متن دستور لازم است"));
       const parsed = body.intent ? { intent: body.intent, args: body.args || {} } : await parseIntent(env, body.text);
-      if (parsed.intent === "none") return ok({ intent: "none", message: "دستور زیرساختی تشخیص داده نشد" });
+      if (parsed.intent === "none") return ok({ intent: "none", message: pxText("دستور زیرساختی تشخیص داده نشد") });
       const result = await execute(env, parsed, { userId, confirmed: !!body.confirmed });
       return ok({ intent: parsed.intent, confidence: parsed.confidence, result, needsConfirmation: result?.type === "confirm" });
     }
@@ -1233,19 +1245,19 @@ export async function handleApi(request, env, botToken, adminId) {
     if (path === "/agents/runs" && method === "GET") return ok(await listRuns(env, Number(q.limit || 20)));
     if ((m = match(path, "/agents/:id")) && method === "GET") {
       const a = await getAgent(env, m.id);
-      return a ? ok(a) : fail("عامل یافت نشد", 404);
+      return a ? ok(a) : fail(pxText("عامل یافت نشد"), 404);
     }
     if ((m = match(path, "/agents/:id")) && method === "PATCH") return ok(await updateAgent(env, m.id, body, userId));
     if ((m = match(path, "/agents/:id")) && method === "DELETE") return ok({ deleted: await deleteAgent(env, m.id, userId) });
     if ((m = match(path, "/agents/:id/duplicate")) && method === "POST") return ok(await duplicateAgent(env, m.id, userId));
     if ((m = match(path, "/agents/:id/run")) && method === "POST") {
-      if (!body.goal) return fail("goal لازم است");
+      if (!body.goal) return fail(pxText("goal لازم است"));
       const r = await runAgent(env, { agentId: m.id, goal: body.goal, userId, context: body.context, maxSteps: body.maxSteps, confirmDangerous: !!body.confirmDangerous });
       return ok(r);
     }
     if ((m = match(path, "/agents/runs/:id")) && method === "GET") {
       const r = await getRun(env, m.id);
-      return r ? ok(r) : fail("اجرا یافت نشد", 404);
+      return r ? ok(r) : fail(pxText("اجرا یافت نشد"), 404);
     }
 
     // ── tools & MCP ─────────────────────────
@@ -1254,11 +1266,11 @@ export async function handleApi(request, env, botToken, adminId) {
       return ok(servers.map(s => { const { enc, ...safe } = s; return safe; }));
     }
     if (path === "/mcp" && method === "POST") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       return ok(await addMcpServer(env, body));
     }
     if ((m = match(path, "/mcp/:id")) && method === "DELETE") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       return ok(await deleteMcpServer(env, m.id));
     }
     if (path === "/mcp/sync" && method === "POST") return ok(await syncMcpTools(env));
@@ -1395,8 +1407,8 @@ export async function handleApi(request, env, botToken, adminId) {
       return ok(Array.isArray(docs) ? docs.map(d => ({ id: d.id, name: d.name, chunks: d.chunks, ts: d.ts })) : []);
     }
     if (path === "/knowledge" && method === "POST") {
-      if (!ctx.ai.kbAddDocument) return fail("ماژول دانش در دسترس نیست", 501);
-      if (!body.text) return fail("متن سند لازم است");
+      if (!ctx.ai.kbAddDocument) return fail(pxText("ماژول دانش در دسترس نیست"), 501);
+      if (!body.text) return fail(pxText("متن سند لازم است"));
       const r = await ctx.ai.kbAddDocument(env, userId, String(body.name || "doc").slice(0, 60), String(body.text).slice(0, 200000));
       return ok(r);
     }
@@ -1408,7 +1420,7 @@ export async function handleApi(request, env, botToken, adminId) {
       return ok({ deleted: docs.length - next.length });
     }
     if (path === "/knowledge/search" && method === "POST") {
-      if (!ctx.ai.kbSearch) return fail("ماژول دانش در دسترس نیست", 501);
+      if (!ctx.ai.kbSearch) return fail(pxText("ماژول دانش در دسترس نیست"), 501);
       return ok(await ctx.ai.kbSearch(env, userId, body.query || "", Number(body.topK || 5)));
     }
 
@@ -1421,7 +1433,7 @@ export async function handleApi(request, env, botToken, adminId) {
     // ── prompt lab ──────────────────────────
     if (path === "/promptlab" && method === "GET") return ok(await listPromptLab(env, userId));
     if (path === "/promptlab/optimize" && method === "POST") {
-      if (!body.prompt) return fail("پرامپت لازم است");
+      if (!body.prompt) return fail(pxText("پرامپت لازم است"));
       return ok(await optimizePrompt(env, userId, body.prompt, body));
     }
     if (path === "/promptlab/abtest" && method === "POST") return ok(await abTestPrompt(env, userId, body));
@@ -1436,7 +1448,7 @@ export async function handleApi(request, env, botToken, adminId) {
     if ((m = match(path, "/tasks/:id")) && method === "DELETE") return ok({ deleted: await deleteTask(env, m.id, userId) });
     if ((m = match(path, "/tasks/:id/run")) && method === "POST") {
       const t = await getTask(env, m.id);
-      if (!t) return fail("تسک یافت نشد", 404);
+      if (!t) return fail(pxText("تسک یافت نشد"), 404);
       return ok(await runTask(env, t, { notify: ctx.tg.sendMessage }));
     }
     if (path === "/workflows" && method === "GET") return ok(await listWorkflows(env, admin && q.all === "true" ? null : userId));
@@ -1446,7 +1458,7 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/workflows/:id")) && method === "GET") {
       const wf = await getWorkflow(env, m.id);
-      return wf ? ok(wf) : fail("workflow یافت نشد", 404);
+      return wf ? ok(wf) : fail(pxText("workflow یافت نشد"), 404);
     }
     if ((m = match(path, "/workflows/:id")) && method === "PATCH") return ok(await updateWorkflow(env, m.id, body, userId));
     if ((m = match(path, "/workflows/:id")) && method === "DELETE") return ok({ deleted: await deleteWorkflow(env, m.id, userId) });
@@ -1465,7 +1477,7 @@ export async function handleApi(request, env, botToken, adminId) {
     if ((m = match(path, "/alerts/:id")) && method === "DELETE") return ok(await deleteAlertRule(env, m.id, userId));
     if (path === "/alerts/evaluate" && method === "POST") return ok(await evaluateAlerts(env, { notify: ctx.tg.sendMessage, adminChatId: adminId }));
     if (path === "/audit") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       return ok(await auditRead(env, Number(q.days || 7), Number(q.limit || 200)));
     }
 
@@ -1492,7 +1504,7 @@ export async function handleApi(request, env, botToken, adminId) {
     if (path === "/benchmarks" && method === "GET") return ok(await listBenchmarks(env, Number(q.limit || 20)));
     if ((m = match(path, "/benchmarks/:id")) && method === "GET") {
       const b = await getBenchmark(env, m.id);
-      return b ? ok(b) : fail("بنچمارک یافت نشد", 404);
+      return b ? ok(b) : fail(pxText("بنچمارک یافت نشد"), 404);
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -1517,7 +1529,7 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/stream/:id/status")) && method === "GET") {
       const status = await getStreamStatus(env, m.id);
-      if (!status) return fail("Stream یافت نشد", 404);
+      if (!status) return fail(pxText("Stream یافت نشد"), 404);
       return ok(status);
     }
     if (path === "/stream/stats" && method === "GET") {
@@ -1551,7 +1563,7 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/webhooks/:id")) && method === "GET") {
       const webhook = await getWebhook(env, m.id);
-      if (!webhook) return fail("Webhook یافت نشد", 404);
+      if (!webhook) return fail(pxText("Webhook یافت نشد"), 404);
       return ok(stripWebhookSecret(webhook));
     }
     if ((m = match(path, "/webhooks/:id")) && method === "PATCH") {
@@ -1593,12 +1605,12 @@ export async function handleApi(request, env, botToken, adminId) {
     // Phase 37: Plugin System
     // ──────────────────────────────────────────────────────────────
     if (path === "/plugins" && method === "GET") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       const plugins = await listPlugins(env);
       return ok(plugins);
     }
     if (path === "/plugins" && method === "POST") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       const plugin = await registerPlugin(env, {
         name: body.name,
         type: body.type,
@@ -1609,12 +1621,12 @@ export async function handleApi(request, env, botToken, adminId) {
       return ok(plugin);
     }
     if ((m = match(path, "/plugins/:id/enable")) && method === "POST") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       const plugin = await enablePlugin(env, m.id);
       return ok(plugin);
     }
     if ((m = match(path, "/plugins/:id/disable")) && method === "POST") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       const plugin = await disablePlugin(env, m.id);
       return ok(plugin);
     }
@@ -1675,7 +1687,7 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/vector/indexes/:id")) && method === "GET") {
       const index = await getVectorIndex(env, m.id);
-      if (!index) return fail("Vector index یافت نشد", 404);
+      if (!index) return fail(pxText("Vector index یافت نشد"), 404);
       return ok(index);
     }
     if ((m = match(path, "/vector/indexes/:id")) && method === "DELETE") {
@@ -1697,7 +1709,7 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/vector/indexes/:indexId/vectors/:vectorId")) && method === "GET") {
       const vector = await getVector(env, m.indexId, m.vectorId);
-      if (!vector) return fail("Vector یافت نشد", 404);
+      if (!vector) return fail(pxText("Vector یافت نشد"), 404);
       return ok(vector);
     }
     if ((m = match(path, "/vector/indexes/:indexId/vectors/:vectorId")) && method === "DELETE") {
@@ -1753,7 +1765,7 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/rag/knowledge-bases/:id")) && method === "GET") {
       const kb = await getKnowledgeBase(env, m.id);
-      if (!kb) return fail("Knowledge base یافت نشد", 404);
+      if (!kb) return fail(pxText("Knowledge base یافت نشد"), 404);
       return ok(kb);
     }
     if ((m = match(path, "/rag/knowledge-bases/:id")) && method === "DELETE") {
@@ -1839,7 +1851,7 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/documents/:id")) && method === "GET") {
       const doc = await getUploadedDocument(env, m.id);
-      if (!doc) return fail("Document یافت نشد", 404);
+      if (!doc) return fail(pxText("Document یافت نشد"), 404);
       return ok(doc);
     }
     if ((m = match(path, "/documents/:id")) && method === "DELETE") {
@@ -1848,7 +1860,7 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/documents/:id/content")) && method === "GET") {
       const content = await getDocumentContent(env, m.id);
-      if (!content) return fail("Content یافت نشد", 404);
+      if (!content) return fail(pxText("Content یافت نشد"), 404);
       return new Response(content, { headers: { "Content-Type": "application/octet-stream" } });
     }
     if ((m = match(path, "/documents/:id/process")) && method === "POST") {
@@ -1883,7 +1895,7 @@ export async function handleApi(request, env, botToken, adminId) {
       return ok(stats);
     }
     if (path === "/cache/semantic/invalidate" && method === "POST") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       const result = await semanticCacheInvalidate(env, {
         pattern: body.pattern,
         olderThan: body.olderThan
@@ -1947,7 +1959,7 @@ export async function handleApi(request, env, botToken, adminId) {
     // Phase 25: Multi-Tenancy
     // ──────────────────────────────────────────────────────────────
     if (path === "/tenants" && method === "GET") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       const tenants = await listTenants(env, {
         status: q.status,
         plan: q.plan,
@@ -1956,7 +1968,7 @@ export async function handleApi(request, env, botToken, adminId) {
       return ok(tenants);
     }
     if (path === "/tenants" && method === "POST") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       const tenant = await createTenant(env, {
         name: body.name,
         slug: body.slug,
@@ -1971,16 +1983,16 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/tenants/:id")) && method === "GET") {
       const tenant = await getTenant(env, m.id);
-      if (!tenant) return fail("Tenant یافت نشد", 404);
+      if (!tenant) return fail(pxText("Tenant یافت نشد"), 404);
       return ok(tenant);
     }
     if ((m = match(path, "/tenants/:id")) && method === "PATCH") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       const tenant = await updateTenant(env, m.id, body, userId);
       return ok(tenant);
     }
     if ((m = match(path, "/tenants/:id")) && method === "DELETE") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       await deleteTenant(env, m.id, userId);
       return ok({ deleted: true });
     }
@@ -2042,7 +2054,7 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/tenants/:tenantId/roles/:roleId")) && method === "GET") {
       const role = await getRole(env, m.tenantId, m.roleId);
-      if (!role) return fail("Role یافت نشد", 404);
+      if (!role) return fail(pxText("Role یافت نشد"), 404);
       return ok(role);
     }
     if ((m = match(path, "/tenants/:tenantId/roles/:roleId")) && method === "PATCH") {
@@ -2115,7 +2127,7 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/tenants/:tenantId/sso/:configId")) && method === "GET") {
       const config = await getSsoConfig(env, m.tenantId, m.configId);
-      if (!config) return fail("SSO config یافت نشد", 404);
+      if (!config) return fail(pxText("SSO config یافت نشد"), 404);
       return ok(sanitizeSsoConfig(config));
     }
     if ((m = match(path, "/tenants/:tenantId/sso/:configId")) && method === "PATCH") {
@@ -2142,12 +2154,12 @@ export async function handleApi(request, env, botToken, adminId) {
       return ok({ providers: OAUTH_PROVIDERS });
     }
     if ((m = match(path, "/users/:userId/identities")) && method === "GET") {
-      if (!admin && m.userId !== String(userId)) return fail("فقط ادمین", 403);
+      if (!admin && m.userId !== String(userId)) return fail(pxText("فقط ادمین"), 403);
       const identities = await getUserExternalIdentities(env, m.userId);
       return ok(identities);
     }
     if ((m = match(path, "/users/:userId/identities/:provider")) && method === "DELETE") {
-      if (!admin && m.userId !== String(userId)) return fail("فقط ادمین", 403);
+      if (!admin && m.userId !== String(userId)) return fail(pxText("فقط ادمین"), 403);
       await unlinkExternalIdentity(env, m.userId, m.provider);
       return ok({ deleted: true });
     }
@@ -2191,12 +2203,12 @@ export async function handleApi(request, env, botToken, adminId) {
       return ok(request);
     }
     if ((m = match(path, "/residency/transfer-requests/:id/approve")) && method === "POST") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       const request = await approveDataTransferRequest(env, m.id, userId);
       return ok(request);
     }
     if ((m = match(path, "/residency/transfer-requests/:id/reject")) && method === "POST") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       const request = await rejectDataTransferRequest(env, m.id, userId, body.reason);
       return ok(request);
     }
@@ -2205,7 +2217,7 @@ export async function handleApi(request, env, botToken, adminId) {
     // Phase 29: Compliance Audit Trails
     // ──────────────────────────────────────────────────────────────
     if (path === "/audit/export" && method === "POST") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       const exportData = await auditExport(env, {
         startDate: body.startDate,
         endDate: body.endDate,
@@ -2222,12 +2234,12 @@ export async function handleApi(request, env, botToken, adminId) {
       return ok(exportData);
     }
     if (path === "/audit/stats" && method === "GET") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       const stats = await auditStats(env, Number(q.days || 30), q.tenantId);
       return ok(stats);
     }
     if (path === "/audit/search" && method === "POST") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       const results = await auditSearch(env, {
         query: body.query,
         startDate: body.startDate,
@@ -2237,7 +2249,7 @@ export async function handleApi(request, env, botToken, adminId) {
       return ok(results);
     }
     if (path === "/audit/compliance-report" && method === "POST") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       const report = await generateComplianceReport(env, {
         tenantId: body.tenantId,
         startDate: body.startDate,
@@ -2265,7 +2277,7 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/observability/traces/:id")) && method === "GET") {
       const trace = await getTrace(env, m.id);
-      if (!trace) return fail("Trace یافت نشد", 404);
+      if (!trace) return fail(pxText("Trace یافت نشد"), 404);
       return ok(trace);
     }
     if (path === "/observability/metrics" && method === "GET") {
@@ -2313,7 +2325,7 @@ export async function handleApi(request, env, botToken, adminId) {
       return ok(budgets);
     }
     if (path === "/budgets" && method === "POST") {
-      if (!admin && body.scope === "global") return fail("فقط ادمین", 403);
+      if (!admin && body.scope === "global") return fail(pxText("فقط ادمین"), 403);
       const budget = await createBudget(env, {
         name: body.name,
         scope: body.scope || "user",
@@ -2327,7 +2339,7 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/budgets/:id")) && method === "GET") {
       const budget = await getBudget(env, m.id);
-      if (!budget) return fail("Budget یافت نشد", 404);
+      if (!budget) return fail(pxText("Budget یافت نشد"), 404);
       return ok(budget);
     }
     if ((m = match(path, "/budgets/:id")) && method === "PATCH") {
@@ -2352,7 +2364,7 @@ export async function handleApi(request, env, botToken, adminId) {
       return ok(summary);
     }
     if (path === "/costs/top-spenders" && method === "GET") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       const spenders = await getTopSpenders(env, {
         scope: q.scope || "user",
         period: Number(q.period || 7),
@@ -2400,13 +2412,13 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if (path === "/ratelimit/quotas" && method === "GET") {
       const target = q.userId || userId;
-      if (!admin && String(target) !== String(userId)) return fail("فقط ادمین", 403);
+      if (!admin && String(target) !== String(userId)) return fail(pxText("فقط ادمین"), 403);
       const tier = await getUserTier(env, target);
       const quotas = await getUserQuotas(env, target, tier);
       return ok(quotas);
     }
     if (path === "/ratelimit/stats" && method === "GET") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       const stats = await getRateLimitStats(env, { hours: Number(q.hours || 24) });
       return ok(stats);
     }
@@ -2414,12 +2426,12 @@ export async function handleApi(request, env, botToken, adminId) {
       return ok({ tiers: USER_TIERS });
     }
     if ((m = match(path, "/users/:userId/tier")) && method === "GET") {
-      if (!admin && m.userId !== String(userId)) return fail("فقط ادمین", 403);
+      if (!admin && m.userId !== String(userId)) return fail(pxText("فقط ادمین"), 403);
       const tier = await getUserTier(env, m.userId);
       return ok({ userId: m.userId, tier });
     }
     if ((m = match(path, "/users/:userId/tier")) && method === "PUT") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       const tier = await setUserTier(env, m.userId, body.tier);
       return ok({ userId: m.userId, tier });
     }
@@ -2490,7 +2502,7 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/eval/datasets/:id")) && method === "GET") {
       const dataset = await getEvalDataset(env, m.id);
-      if (!dataset) return fail("Dataset یافت نشد", 404);
+      if (!dataset) return fail(pxText("Dataset یافت نشد"), 404);
       return ok(dataset);
     }
     if ((m = match(path, "/eval/datasets/:id")) && method === "DELETE") {
@@ -2541,14 +2553,14 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/eval/runs/:id")) && method === "GET") {
       const run = await getEvalRun(env, m.id);
-      if (!run) return fail("Eval run یافت نشد", 404);
+      if (!run) return fail(pxText("Eval run یافت نشد"), 404);
       return ok(run);
     }
     if (path === "/eval/criteria" && method === "GET") {
       return ok({ criteria: EVAL_CRITERIA });
     }
     if (path === "/eval/regression/auto" && method === "POST") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       const result = await autoRunRegression(env, body.triggerType || "model", body.triggerData || {
         modelIds: body.modelIds,
         datasetIds: body.datasetIds,
@@ -2579,7 +2591,7 @@ export async function handleApi(request, env, botToken, adminId) {
     }
     if ((m = match(path, "/prompts/:id/versions/:version")) && method === "GET") {
       const version = await getPromptVersion(env, m.id, m.version);
-      if (!version) return fail("Prompt version یافت نشد", 404);
+      if (!version) return fail(pxText("Prompt version یافت نشد"), 404);
       return ok(version);
     }
     if ((m = match(path, "/prompts/:id/rollback")) && method === "POST") {
@@ -2607,7 +2619,7 @@ export async function handleApi(request, env, botToken, adminId) {
     // Phase 17: Export/Import & Backup
     // ──────────────────────────────────────────────────────────────
     if (path === "/platform/export" && method === "POST") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       const exclude = [];
       if (body.includeProviders === false) exclude.push("providers");
       if (body.includeModels === false) exclude.push("models");
@@ -2619,7 +2631,7 @@ export async function handleApi(request, env, botToken, adminId) {
       return ok(exportData);
     }
     if (path === "/platform/import" && method === "POST") {
-      if (!admin) return fail("فقط ادمین", 403);
+      if (!admin) return fail(pxText("فقط ادمین"), 403);
       const result = await importPlatformData(env, body.data, userId, {
         overwrite: body.mergeStrategy === "overwrite"
       });
@@ -2675,9 +2687,9 @@ export async function handleApi(request, env, botToken, adminId) {
       return ok(result);
     }
 
-    return fail(`مسیر ${method} /api${path} وجود ندارد`, 404);
+    return fail(pxTemplate`مسیر ${method} /api${path} وجود ندارد`, 404);
   } catch (e) {
-    return fail(e, 500, "جزئیات در پیام خطا آمده — اگر تکرار شد لاگ Worker را ببینید");
+    return fail(e, 500, pxText("جزئیات در پیام خطا آمده — اگر تکرار شد لاگ Worker را ببینید"));
   }
 }
 

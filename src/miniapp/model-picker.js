@@ -4,18 +4,18 @@ let modelPicker = null;
 function chatModelTriggerHtml(models) {
   S.chat.availableModels = models;
   const selected = models.find(function (m) { return m.id === S.chat.modelId; });
-  const name = selected ? (selected.name || selected.apiModelId) : 'انتخاب هوشمند';
-  return '<button type="button" id="cmodel" class="model-trigger" aria-haspopup="dialog" aria-expanded="false" aria-label="انتخاب مدل گفتگو، ' + h(name) + '" title="' + h(name) + '" onclick="openModelPicker()">' +
+  const name = selected ? (selected.name || selected.apiModelId) : pxText('انتخاب هوشمند');
+  return pxText('<button type="button" id="cmodel" class="model-trigger" aria-haspopup="dialog" aria-expanded="false" aria-label="انتخاب مدل گفتگو، ') + h(name) + '" title="' + h(name) + '" onclick="openModelPicker()">' +
     '<span class="model-trigger-icon">' + pxIcon(selected ? 'models' : 'spark', 18) + '</span>' +
-    '<span class="model-trigger-copy"><bdi>' + h(name) + '</bdi><small>' + h(selected ? selected.provider || 'مدل انتخاب‌شده' : 'Auto · متناسب با درخواست تو') + '</small></span>' +
+    '<span class="model-trigger-copy"><bdi>' + h(name) + '</bdi><small>' + h(selected ? selected.provider || pxText('مدل انتخاب‌شده') : pxText('Auto · متناسب با درخواست تو')) + '</small></span>' +
     '<svg class="model-chevron" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>';
 }
 function pickerProviderKey(m) { return String(m.providerId || m.provider || 'other'); }
 function pickerStatus(m) {
-  if (m.status === 'healthy') return ['healthy', 'پاسخ‌گو'];
-  if (m.status === 'degraded') return ['degraded', 'ناپایدار'];
-  if (m.status === 'failed') return ['failed', 'نیاز به بررسی'];
-  return ['unknown', 'بررسی‌نشده'];
+  if (m.status === 'healthy') return ['healthy', pxText('پاسخ‌گو')];
+  if (m.status === 'degraded') return ['degraded', pxText('ناپایدار')];
+  if (m.status === 'failed') return ['failed', pxText('نیاز به بررسی')];
+  return ['unknown', pxText('بررسی‌نشده')];
 }
 function pickerMark(name) {
   const label = String(name || 'AI');
@@ -23,14 +23,14 @@ function pickerMark(name) {
   return '<span class="model-provider-mark tone-' + tone + '" aria-hidden="true">' + h(label.trim().slice(0, 1).toUpperCase()) + '</span>';
 }
 function pickerNormalize(text) {
-  return String(text || '').normalize('NFKC').toLocaleLowerCase().replace(/ي/g, 'ی').replace(/ك/g, 'ک');
+  return String(text || '').normalize('NFKC').toLocaleLowerCase().replace(/ي/g, pxText('ی')).replace(/ك/g, pxText('ک'));
 }
 function pickerRowHtml(m) {
   const status = pickerStatus(m);
   const selected = S.chat.modelId === m.id;
   return '<button type="button" class="model-option' + (selected ? ' is-selected' : '') + '" data-model-id="' + h(m.id) + '" aria-pressed="' + selected + '">' +
     pickerMark(m.provider) + '<span class="model-option-copy"><bdi class="model-option-name">' + h(m.name || m.apiModelId) + '</bdi><bdi class="model-option-id" dir="ltr">' + h(m.apiModelId || m.id) + '</bdi></span>' +
-    '<span class="model-option-meta"><span class="model-status status-' + status[0] + '"><i aria-hidden="true"></i>' + status[1] + '</span>' + (m.pricing && m.pricing.free ? '<small class="model-free">رایگان</small>' : '') + '</span>' +
+    '<span class="model-option-meta"><span class="model-status status-' + status[0] + '"><i aria-hidden="true"></i>' + status[1] + '</span>' + (m.pricing && m.pricing.free ? pxText('<small class="model-free">رایگان</small>') : '') + '</span>' +
     '<span class="model-option-check" aria-hidden="true">' + (selected ? pxIcon('check', 15) : '') + '</span></button>';
 }
 function renderModelPickerResults() {
@@ -44,18 +44,18 @@ function renderModelPickerResults() {
   const groups = new Map();
   matches.forEach(function (m) {
     const key = pickerProviderKey(m);
-    if (!groups.has(key)) groups.set(key, { label: m.provider || 'سایر مدل‌ها', rows: [] });
+    if (!groups.has(key)) groups.set(key, { label: m.provider || pxText('سایر مدل‌ها'), rows: [] });
     groups.get(key).rows.push(m);
   });
   let html = '';
   groups.forEach(function (group) {
-    html += '<section class="model-group"><h3><bdi>' + h(group.label) + '</bdi><span>' + n(group.rows.length) + ' مدل</span></h3>' + group.rows.map(pickerRowHtml).join('') + '</section>';
+    html += '<section class="model-group"><h3><bdi>' + h(group.label) + '</bdi><span>' + n(group.rows.length) + pxText(' مدل</span></h3>') + group.rows.map(pickerRowHtml).join('') + '</section>';
   });
-  if (!matches.length) html = '<div class="model-picker-empty">' + pxIcon('search', 30) + '<strong>مدلی پیدا نشد</strong><p>نام کوتاه‌تر یا پروایدر دیگری را امتحان کن.</p><button type="button" class="btn gho" data-picker-reset>پاک کردن فیلترها</button></div>';
+  if (!matches.length) html = '<div class="model-picker-empty">' + pxIcon('search', 30) + pxText('<strong>مدلی پیدا نشد</strong><p>نام کوتاه‌تر یا پروایدر دیگری را امتحان کن.</p><button type="button" class="btn gho" data-picker-reset>پاک کردن فیلترها</button></div>');
   const list = document.getElementById('modelPickerResults');
   list.innerHTML = html;
   list.scrollTop = 0;
-  document.getElementById('modelPickerCount').textContent = n(matches.length) + ' مدل' + (terms.length || modelPicker.provider ? ' پیدا شد' : ' در دسترس');
+  document.getElementById('modelPickerCount').textContent = n(matches.length) + pxText(' مدل') + (terms.length || modelPicker.provider ? pxText(' پیدا شد') : pxText(' در دسترس'));
   document.querySelectorAll('#modelPickerFilters [data-provider]').forEach(function (button) {
     const active = button.dataset.provider === modelPicker.provider;
     button.classList.toggle('is-active', active); button.setAttribute('aria-pressed', String(active));
@@ -114,17 +114,17 @@ function openModelPicker() {
   if (modelPicker) return;
   const models = S.chat.availableModels || [];
   const providers = new Map();
-  models.forEach(function (m) { const key = pickerProviderKey(m); if (!providers.has(key)) providers.set(key, m.provider || 'سایر'); });
-  let chips = '<button type="button" class="model-filter is-active" data-provider="" aria-pressed="true">همهٔ پروایدرها</button>';
+  models.forEach(function (m) { const key = pickerProviderKey(m); if (!providers.has(key)) providers.set(key, m.provider || pxText('سایر')); });
+  let chips = pxText('<button type="button" class="model-filter is-active" data-provider="" aria-pressed="true">همهٔ پروایدرها</button>');
   providers.forEach(function (label, key) { chips += '<button type="button" class="model-filter" data-provider="' + h(key) + '" aria-pressed="false"><bdi>' + h(label) + '</bdi></button>'; });
   const overlay = document.createElement('div');
   overlay.id = 'modelPickerOverlay'; overlay.className = 'model-picker-overlay';
   overlay.innerHTML = '<section class="model-picker" role="dialog" aria-modal="true" aria-labelledby="modelPickerTitle" aria-describedby="modelPickerHint">' +
-    '<div class="model-picker-handle" aria-hidden="true"></div><header class="model-picker-header"><div><span class="model-picker-eyebrow">MODEL LIBRARY</span><h2 id="modelPickerTitle">مدل گفتگو را انتخاب کن</h2></div><button type="button" class="model-picker-close" data-picker-close aria-label="بستن انتخاب مدل">' + pxIcon('close', 19) + '</button></header>' +
-    '<button type="button" class="model-auto' + (!S.chat.modelId ? ' is-selected' : '') + '" data-model-id="" aria-pressed="' + !S.chat.modelId + '"><span class="model-auto-icon">' + pxIcon('spark', 23) + '</span><span class="model-auto-copy"><strong>انتخاب هوشمند <bdi>Auto</bdi></strong><small>مدل مناسب با درخواست و حالت پاسخ تو</small></span><span class="model-option-check" aria-hidden="true">' + (!S.chat.modelId ? pxIcon('check', 15) : '') + '</span></button>' +
-    '<div class="model-picker-search">' + pxIcon('search', 19) + '<input id="modelPickerSearch" type="search" autocomplete="off" spellcheck="false" aria-label="جستجوی مدل یا پروایدر" placeholder="جستجوی مدل یا پروایدر…"><button type="button" id="modelPickerClear" data-picker-clear aria-label="پاک کردن جستجو" hidden>' + pxIcon('close', 15) + '</button></div>' +
-    '<div class="model-picker-filters" id="modelPickerFilters" role="group" aria-label="فیلتر پروایدر">' + chips + '</div><div class="model-picker-summary"><span id="modelPickerCount" role="status" aria-live="polite"></span><span>مدل‌های تو</span></div><div class="model-picker-results" id="modelPickerResults"></div>' +
-    '<footer class="model-picker-footer"><span id="modelPickerHint">وضعیت‌ها بر اساس آخرین بررسی مدل‌اند.</span><span class="model-picker-keys"><kbd>↑</kbd><kbd>↓</kbd> جابه‌جایی <kbd>Enter</kbd> انتخاب</span></footer></section>';
+    pxText('<div class="model-picker-handle" aria-hidden="true"></div><header class="model-picker-header"><div><span class="model-picker-eyebrow">MODEL LIBRARY</span><h2 id="modelPickerTitle">مدل گفتگو را انتخاب کن</h2></div><button type="button" class="model-picker-close" data-picker-close aria-label="بستن انتخاب مدل">') + pxIcon('close', 19) + '</button></header>' +
+    '<button type="button" class="model-auto' + (!S.chat.modelId ? ' is-selected' : '') + '" data-model-id="" aria-pressed="' + !S.chat.modelId + '"><span class="model-auto-icon">' + pxIcon('spark', 23) + pxText('</span><span class="model-auto-copy"><strong>انتخاب هوشمند <bdi>Auto</bdi></strong><small>مدل مناسب با درخواست و حالت پاسخ تو</small></span><span class="model-option-check" aria-hidden="true">') + (!S.chat.modelId ? pxIcon('check', 15) : '') + '</span></button>' +
+    '<div class="model-picker-search">' + pxIcon('search', 19) + pxText('<input id="modelPickerSearch" type="search" autocomplete="off" spellcheck="false" aria-label="جستجوی مدل یا پروایدر" placeholder="جستجوی مدل یا پروایدر…"><button type="button" id="modelPickerClear" data-picker-clear aria-label="پاک کردن جستجو" hidden>') + pxIcon('close', 15) + '</button></div>' +
+    pxText('<div class="model-picker-filters" id="modelPickerFilters" role="group" aria-label="فیلتر پروایدر">') + chips + pxText('</div><div class="model-picker-summary"><span id="modelPickerCount" role="status" aria-live="polite"></span><span>مدل‌های تو</span></div><div class="model-picker-results" id="modelPickerResults"></div>') +
+    pxText('<footer class="model-picker-footer"><span id="modelPickerHint">وضعیت‌ها بر اساس آخرین بررسی مدل‌اند.</span><span class="model-picker-keys"><kbd>↑</kbd><kbd>↓</kbd> جابه‌جایی <kbd>Enter</kbd> انتخاب</span></footer></section>');
   const app = document.getElementById('app');
   modelPicker = { models: models, query: '', provider: '', overlay: overlay, app: app, wasInert: app.inert, overflow: document.body.style.overflow, focus: document.activeElement };
   app.inert = true; document.body.style.overflow = 'hidden';

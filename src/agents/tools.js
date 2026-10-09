@@ -1,3 +1,4 @@
+import { pxText, pxTemplate } from '../i18n/server.js';
 // ─────────────────────────────────────────────
 // 🧰 Tool Registry — ابزارهای قابلکشف برای عاملها (+ آمادگی MCP)
 // ─────────────────────────────────────────────
@@ -57,7 +58,7 @@ export const RISK_POLICIES = {
 };
 
 export function registerTool(def) {
-  if (!def?.name || typeof def.run !== "function") throw new Error("tool نامعتبر");
+  if (!def?.name || typeof def.run !== "function") throw new Error(pxText("tool نامعتبر"));
   
   // Assign risk level (default to medium if not specified)
   const riskLevel = def.riskLevel || (def.dangerous ? "high" : "medium");
@@ -115,8 +116,8 @@ export function toolSchemas({ includeDangerous = false, only = null } = {}) {
 
 export async function runTool(env, name, args = {}, meta = {}) {
   const tool = registry.get(name);
-  if (!tool) return { ok: false, error: `ابزار ${name} وجود ندارد` };
-  if (!tool.enabled) return { ok: false, error: `ابزار ${name} غیرفعال است` };
+  if (!tool) return { ok: false, error: pxTemplate`ابزار ${name} وجود ندارد` };
+  if (!tool.enabled) return { ok: false, error: pxTemplate`ابزار ${name} غیرفعال است` };
   
   // Rate limiting check
   const rateLimitKey = `tool:ratelimit:${name}:${meta.userId || 0}`;
@@ -342,7 +343,7 @@ function sanitizeToolOutput(output, tool) {
 // ─────────────────────────────────────────────
 registerTool({
   name: "web_search",
-  description: "جستجوی وب و بازگرداندن نتایج با عنوان، لینک و خلاصه",
+  get description(){return pxText("جستجوی وب و بازگرداندن نتایج با عنوان، لینک و خلاصه")},
   input: { type: "object", properties: { query: { type: "string" }, max: { type: "number" } }, required: ["query"] },
   riskLevel: "low",
   security: {
@@ -351,7 +352,7 @@ registerTool({
     outputSanitization: "basic"
   },
   run: async ({ args }) => {
-    if (!ctx.ai.webSearch) throw new Error("web search در دسترس نیست");
+    if (!ctx.ai.webSearch) throw new Error(pxText("web search در دسترس نیست"));
     const hits = await ctx.ai.webSearch(args.query, Math.min(10, args.max || 6));
     return { results: hits.map(h => ({ title: h.title, url: h.uri, snippet: h.snippet })) };
   }
@@ -400,7 +401,7 @@ registerTool({
 
 registerTool({
   name: "fetch_page",
-  description: "دریافت محتوای متنی یک صفحه وب از طریق URL",
+  get description(){return pxText("دریافت محتوای متنی یک صفحه وب از طریق URL")},
   input: { type: "object", properties: { url: { type: "string" }, maxChars: { type: "number" } }, required: ["url"] },
   timeout: 20000,
   riskLevel: "medium",
@@ -412,7 +413,7 @@ registerTool({
   },
   run: async ({ args }) => {
     const u = new URL(args.url);
-    if (!/^https?:$/.test(u.protocol)) throw new Error("فقط http/https");
+    if (!/^https?:$/.test(u.protocol)) throw new Error(pxText("فقط http/https"));
     // Block localhost and private IPs to prevent SSRF
     if (/^(localhost|127\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|169\.254\.|::1|fc00:)/i.test(u.hostname)) {
       throw new Error("Cannot access private/localhost addresses");
@@ -439,15 +440,15 @@ function evalExpression(src) {
   function parseNumber() {
     const start = i;
     while (i < s.length && /[0-9.]/.test(s[i])) i++;
-    if (start === i) throw new Error("عبارت نامعتبر");
+    if (start === i) throw new Error(pxText("عبارت نامعتبر"));
     const v = Number(s.slice(start, i));
-    if (!isFinite(v)) throw new Error("عبارت نامعتبر");
+    if (!isFinite(v)) throw new Error(pxText("عبارت نامعتبر"));
     return v;
   }
   function parsePrimary() {
     if (eat("(")) {
       const v = parseAddSub();
-      if (!eat(")")) throw new Error("پرانتز بسته نشده");
+      if (!eat(")")) throw new Error(pxText("پرانتز بسته نشده"));
       return v;
     }
     if (eat("-")) return -parsePrimary();
@@ -471,7 +472,7 @@ function evalExpression(src) {
       if (op === "*" || op === "/" || op === "%") {
         i++;
         const r = parsePower();
-        if ((op === "/" || op === "%") && r === 0) throw new Error("تقسیم بر صفر");
+        if ((op === "/" || op === "%") && r === 0) throw new Error(pxText("تقسیم بر صفر"));
         v = op === "*" ? v * r : op === "/" ? v / r : v % r;
       } else break;
     }
@@ -490,13 +491,13 @@ function evalExpression(src) {
     return v;
   }
   const out = parseAddSub();
-  if (i !== s.length) throw new Error("عبارت نامعتبر");
+  if (i !== s.length) throw new Error(pxText("عبارت نامعتبر"));
   return out;
 }
 
 registerTool({
   name: "calculator",
-  description: "محاسبه یک عبارت ریاضی امن",
+  get description(){return pxText("محاسبه یک عبارت ریاضی امن")},
   input: { type: "object", properties: { expression: { type: "string" } }, required: ["expression"] },
   riskLevel: "safe",
   security: {
@@ -505,17 +506,17 @@ registerTool({
   },
   run: async ({ args }) => {
     const expr = String(args.expression || "").replace(/[^0-9+\-*/().%,\s^]/g, "");
-    if (!expr.trim()) throw new Error("عبارت نامعتبر");
+    if (!expr.trim()) throw new Error(pxText("عبارت نامعتبر"));
     if (expr.length > 200) throw new Error("Expression too long");
     const val = evalExpression(expr.replace(/,/g, ""));
-    if (typeof val !== "number" || !isFinite(val)) throw new Error("نتیجه نامعتبر");
+    if (typeof val !== "number" || !isFinite(val)) throw new Error(pxText("نتیجه نامعتبر"));
     return { expression: expr, value: val };
   }
 });
 
 registerTool({
   name: "http_request",
-  description: "ارسال درخواست HTTP فقط-خواندنی (GET) به یک API عمومی",
+  get description(){return pxText("ارسال درخواست HTTP فقط-خواندنی (GET) به یک API عمومی")},
   input: { type: "object", properties: { url: { type: "string" }, headers: { type: "object" } }, required: ["url"] },
   riskLevel: "high",
   security: {
@@ -538,7 +539,7 @@ registerTool({
 
 registerTool({
   name: "list_models",
-  description: "لیست مدلهای رجیستری با فیلتر وضعیت/قابلیت — دادهی واقعی",
+  get description(){return pxText("لیست مدلهای رجیستری با فیلتر وضعیت/قابلیت — دادهی واقعی")},
   input: { type: "object", properties: { status: { type: "string" }, capability: { type: "string" }, providerId: { type: "string" }, q: { type: "string" } } },
   riskLevel: "safe",
   security: {
@@ -561,7 +562,7 @@ registerTool({
 
 registerTool({
   name: "memory_search",
-  description: "جستجو در حافظه بلندمدت و پایگاه دانش کاربر",
+  get description(){return pxText("جستجو در حافظه بلندمدت و پایگاه دانش کاربر")},
   input: { type: "object", properties: { query: { type: "string" } }, required: ["query"] },
   riskLevel: "low",
   security: {
@@ -577,7 +578,7 @@ registerTool({
 
 registerTool({
   name: "code_analysis",
-  description: "تحلیل ایستا و امنیتی قطعه کد (secret، injection، الگوهای ناامن)",
+  get description(){return pxText("تحلیل ایستا و امنیتی قطعه کد (secret، injection، الگوهای ناامن)")},
   input: { type: "object", properties: { code: { type: "string" }, language: { type: "string" } }, required: ["code"] },
   riskLevel: "low",
   security: {
@@ -589,14 +590,14 @@ registerTool({
     if (code.length > 50000) throw new Error("Code too large (max 50KB)");
     const findings = [];
     const rules = [
-      { id: "secret", re: /(sk-[A-Za-z0-9]{16,}|nvapi-[A-Za-z0-9_-]{16,}|AIza[0-9A-Za-z_-]{30,}|ghp_[A-Za-z0-9]{20,})/g, sev: "critical", msg: "کلید/توکن hard-coded" },
-      { id: "sqli", re: /(query|execute)\s*\(\s*[`"'][^`"']*\$\{|\+\s*req\.(body|query|params)/g, sev: "high", msg: "احتمال SQL Injection (کوئری الحاقی)" },
-      { id: "xss", re: /innerHTML\s*=|document\.write\(|dangerouslySetInnerHTML/g, sev: "high", msg: "احتمال XSS" },
-      { id: "eval", re: /\beval\s*\(|new\s+Function\s*\(/g, sev: "high", msg: "اجرای کد داینامیک" },
-      { id: "ssrf", re: /fetch\(\s*(req|request)\.(body|query|params)/g, sev: "high", msg: "احتمال SSRF" },
-      { id: "weakhash", re: /createHash\(\s*['"](md5|sha1)['"]/g, sev: "medium", msg: "هش ضعیف" },
-      { id: "cors", re: /Access-Control-Allow-Origin['"]\s*[:,]\s*['"]\*/g, sev: "medium", msg: "CORS بازِ کامل" },
-      { id: "http", re: /http:\/\/(?!localhost|127\.)/g, sev: "low", msg: "ارتباط بدون TLS" }
+      { id: "secret", re: /(sk-[A-Za-z0-9]{16,}|nvapi-[A-Za-z0-9_-]{16,}|AIza[0-9A-Za-z_-]{30,}|ghp_[A-Za-z0-9]{20,})/g, sev: "critical", msg: pxText("کلید/توکن hard-coded") },
+      { id: "sqli", re: /(query|execute)\s*\(\s*[`"'][^`"']*\$\{|\+\s*req\.(body|query|params)/g, sev: "high", msg: pxText("احتمال SQL Injection (کوئری الحاقی)") },
+      { id: "xss", re: /innerHTML\s*=|document\.write\(|dangerouslySetInnerHTML/g, sev: "high", msg: pxText("احتمال XSS") },
+      { id: "eval", re: /\beval\s*\(|new\s+Function\s*\(/g, sev: "high", msg: pxText("اجرای کد داینامیک") },
+      { id: "ssrf", re: /fetch\(\s*(req|request)\.(body|query|params)/g, sev: "high", msg: pxText("احتمال SSRF") },
+      { id: "weakhash", re: /createHash\(\s*['"](md5|sha1)['"]/g, sev: "medium", msg: pxText("هش ضعیف") },
+      { id: "cors", re: /Access-Control-Allow-Origin['"]\s*[:,]\s*['"]\*/g, sev: "medium", msg: pxText("CORS بازِ کامل") },
+      { id: "http", re: /http:\/\/(?!localhost|127\.)/g, sev: "low", msg: pxText("ارتباط بدون TLS") }
     ];
     for (const r of rules) {
       const matches = code.match(r.re);
@@ -615,7 +616,7 @@ registerTool({
 
 registerTool({
   name: "data_analyze",
-  description: "تحلیل آماری داده CSV/JSON: میانگین، میانه، انحراف معیار، ناهنجاری",
+  get description(){return pxText("تحلیل آماری داده CSV/JSON: میانگین، میانه، انحراف معیار، ناهنجاری")},
   input: { type: "object", properties: { data: { type: "string" }, format: { type: "string" } }, required: ["data"] },
   riskLevel: "safe",
   security: {
@@ -624,7 +625,7 @@ registerTool({
   },
   run: async ({ args }) => {
     const rows = parseTabular(args.data, args.format);
-    if (!rows.length) throw new Error("داده قابل تجزیه نبود");
+    if (!rows.length) throw new Error(pxText("داده قابل تجزیه نبود"));
     if (rows.length > 10000) throw new Error("Too many rows (max 10,000)");
     const cols = Object.keys(rows[0]);
     const stats = {};
@@ -681,7 +682,7 @@ function splitCsv(line, delim) {
 
 registerTool({
   name: "github_repo",
-  description: "تحلیل یک ریپوی GitHub عمومی: metadata، زبانها، فایلها، README",
+  get description(){return pxText("تحلیل یک ریپوی GitHub عمومی: metadata، زبانها، فایلها، README")},
   input: { type: "object", properties: { repo: { type: "string", description: "owner/name" }, path: { type: "string" } }, required: ["repo"] },
   riskLevel: "low",
   security: {
@@ -710,7 +711,7 @@ registerTool({
 
 registerTool({
   name: "d1_query",
-  description: "اجرای کوئری فقط-خواندنی SELECT روی دیتابیس D1 (اگر متصل باشد)",
+  get description(){return pxText("اجرای کوئری فقط-خواندنی SELECT روی دیتابیس D1 (اگر متصل باشد)")},
   input: { type: "object", properties: { sql: { type: "string" } }, required: ["sql"] },
   riskLevel: "high",
   security: {
@@ -720,7 +721,7 @@ registerTool({
     outputSanitization: "strict"
   },
   run: async ({ env, args }) => {
-    if (!env.DB) throw new Error("دیتابیس D1 متصل نیست (binding DB)");
+    if (!env.DB) throw new Error(pxText("دیتابیس D1 متصل نیست (binding DB)"));
     const sql = String(args.sql || "").trim();
     // Strict validation: only SELECT, no multiple statements, no comments
     if (!/^select\b/i.test(sql)) throw new Error("Only SELECT queries allowed");
@@ -736,7 +737,7 @@ registerTool({
 
 registerTool({
   name: "provider_diagnose",
-  description: "اجرای API Doctor روی یک Base URL و کلید برای عیبیابی",
+  get description(){return pxText("اجرای API Doctor روی یک Base URL و کلید برای عیبیابی")},
   input: { type: "object", properties: { baseUrl: { type: "string" }, apiKey: { type: "string" }, format: { type: "string" } }, required: ["baseUrl"] },
   riskLevel: "medium",
   security: {

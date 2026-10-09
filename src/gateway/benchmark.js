@@ -1,3 +1,4 @@
+import { pxText, pxTemplate } from '../i18n/server.js';
 // ─────────────────────────────────────────────
 // 🏁 Benchmark Engine — اجرای واقعی پرامپتهای استاندارد و امتیازدهی
 // ─────────────────────────────────────────────
@@ -99,9 +100,9 @@ export const FULL_TASKS = Object.keys(BENCH_TASKS);
 
 export async function benchmarkModel(env, modelId, tasks = QUICK_TASKS) {
   const model = await getModel(env, modelId);
-  if (!model) throw new Error("مدل یافت نشد");
+  if (!model) throw new Error(pxText("مدل یافت نشد"));
   const provider = await getProvider(env, model.providerId);
-  if (!provider) throw new Error("پروایدر یافت نشد");
+  if (!provider) throw new Error(pxText("پروایدر یافت نشد"));
 
   const rows = [];
   for (const key of tasks) {

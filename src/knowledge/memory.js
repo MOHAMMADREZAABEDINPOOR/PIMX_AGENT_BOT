@@ -1,3 +1,4 @@
+import { pxText, pxTemplate } from '../i18n/server.js';
 // ─────────────────────────────────────────────
 // 🧠 Advanced Memory, Knowledge Graph & Projects
 // روی حافظه/KB موجود ربات ساخته میشود و آن را جایگزین نمیکند.
@@ -170,7 +171,7 @@ export async function addMemoryScoped(env, opts = {}) {
   const rows = await kvGet(env, key, []);
   
   const clean = String(text || "").trim().slice(0, 1200);
-  if (!clean) throw new Error("متن حافظه خالی است");
+  if (!clean) throw new Error(pxText("متن حافظه خالی است"));
   
   // Check for duplicates
   if (rows.some(m => m.text.toLowerCase() === clean.toLowerCase())) return rows;
@@ -237,7 +238,7 @@ export async function updateMemoryScoped(env, id, text, opts = {}) {
   const key = getScopeKey(scope, { userId, conversationId, projectId, agentId });
   const rows = await kvGet(env, key, []);
   const m = rows.find(x => x.id === id);
-  if (!m) throw new Error("حافظه یافت نشد");
+  if (!m) throw new Error(pxText("حافظه یافت نشد"));
   
   m.text = String(text).slice(0, 1200);
   m.updatedAt = nowIso();
@@ -522,7 +523,7 @@ export async function updateMemory(env, userId, id, text) {
   } catch (e) {
     // If not found, try PROJECT scope
     // (we don't know projectId, so this is best effort)
-    throw new Error("حافظه یافت نشد");
+    throw new Error(pxText("حافظه یافت نشد"));
   }
 }
 
@@ -534,7 +535,7 @@ export async function deleteMemory(env, userId, id) {
       userId
     });
   } catch (e) {
-    throw new Error("حافظه یافت نشد");
+    throw new Error(pxText("حافظه یافت نشد"));
   }
 }
 
@@ -661,7 +662,7 @@ export async function createProject(env, userId, input) {
 
 export async function updateProject(env, id, patch, userId = 0) {
   const p = await getProject(env, id);
-  if (!p) throw new Error("پروژه یافت نشد");
+  if (!p) throw new Error(pxText("پروژه یافت نشد"));
   Object.assign(p, patch, { updatedAt: nowIso() });
   await kvPut(env, projKey(id), p);
   return p;
@@ -715,7 +716,7 @@ export async function abTestPrompt(env, userId, { promptId, variants, modelIds =
   const rows = await kvGet(env, promptLabKey(userId), []);
   const record = promptId ? rows.find(r => r.id === promptId) : null;
   const list = (variants || record?.variants || []).slice(0, 4);
-  if (!list.length) throw new Error("واریانتی برای تست نیست");
+  if (!list.length) throw new Error(pxText("واریانتی برای تست نیست"));
   const { route } = await import("../gateway/router.js");
   const results = [];
   for (const v of list) {

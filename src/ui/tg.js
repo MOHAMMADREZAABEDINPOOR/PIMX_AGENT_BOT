@@ -1,3 +1,4 @@
+import { pxText, pxTemplate } from '../i18n/server.js';
 // ─────────────────────────────────────────────
 // ✉️ PIMXAGENT — Telegram Message & Keyboard Design System
 // Parse mode پروژه HTML است؛ همه پیامها از این ماژول ساخته میشوند
@@ -70,7 +71,7 @@ export const TG = {
     return "█".repeat(filled) + "░".repeat(Math.max(0, width - filled)) + " " + p + "%";
   },
   dot: (tone) => (tone === "ok" ? "🟢" : tone === "warn" ? "🟡" : tone === "bad" ? "🔴" : "⚪"),
-  empty: (t) => `📭 <i>${esc(t || "چیزی برای نمایش نیست")}</i>`,
+  empty: (t) => `📭 <i>${esc(t || pxText("چیزی برای نمایش نیست"))}</i>`,
 
   /* ── chips (بدون رنگ، فقط تشخیص) ─────── */
   model: (name) => `<code>${esc(name || "—")}</code>`,
@@ -88,13 +89,13 @@ function nameSafe(s) { return String(s || "").replace(/[<>&]/g, ""); }
 export const TGM = {
   // پاسخ چت: سلسلهمراتب روشن + تفکر اختیاری + امضای مدل/زمان در پایین
   answer({ body, model, latency, tokens, cost, sources, note, reasoning }) {
-    const parts = [TG.title("🤖", "پاسخ هوش مصنوعی"), TG.divider()];
+    const parts = [TG.title("🤖", pxText("پاسخ هوش مصنوعی")), TG.divider()];
     if (reasoning) {
-      parts.push(TG.expandable(safe(reasoning), "🧠 فرآیند تفکر مدل"), "");
+      parts.push(TG.expandable(safe(reasoning), pxText("🧠 فرآیند تفکر مدل")), "");
     }
     parts.push(safe(body || "—"));
     if (sources && sources.length) {
-      parts.push("", TG.section("📚 منابع"));
+      parts.push("", TG.section(pxText("📚 منابع")));
       parts.push(TG.numbered(sources.slice(0, 5).map((s, i) => TG.source(i + 1, s.title || s.domain, s.url))));
     }
     if (note) parts.push("", TG.quote(note));
@@ -108,30 +109,30 @@ export const TGM = {
   },
 
   research({ topic, summary, findings, sources, models, duration, note }) {
-    const parts = [TG.title("🔬", "تحقیق عمیق"), TG.divider()];
-    if (topic) parts.push(TG.kv("موضوع", topic), "");
-    if (summary) parts.push(TG.section("📌 نتیجه"), safe(summary), "");
-    if (findings && findings.length) parts.push(TG.section("🔎 یافتههای کلیدی"), TG.numbered(findings.slice(0, 8).map(esc)), "");
-    if (sources && sources.length) parts.push(TG.section("📚 منابع"), TG.numbered(sources.slice(0, 8).map((s, i) => TG.source(i + 1, s.title || s.domain, s.url))), "");
+    const parts = [TG.title("🔬", pxText("تحقیق عمیق")), TG.divider()];
+    if (topic) parts.push(TG.kv(pxText("موضوع"), topic), "");
+    if (summary) parts.push(TG.section(pxText("📌 نتیجه")), safe(summary), "");
+    if (findings && findings.length) parts.push(TG.section(pxText("🔎 یافتههای کلیدی")), TG.numbered(findings.slice(0, 8).map(esc)), "");
+    if (sources && sources.length) parts.push(TG.section(pxText("📚 منابع")), TG.numbered(sources.slice(0, 8).map((s, i) => TG.source(i + 1, s.title || s.domain, s.url))), "");
     if (note) parts.push(TG.quote(note), "");
     const meta = [];
-    if (models) meta.push(`🤖 ${esc(models)} مدل`);
+    if (models) meta.push(pxTemplate`🤖 ${esc(models)} مدل`);
     if (duration) meta.push(`⏱ ${esc(duration)}`);
     if (meta.length) parts.push(TG.divider(), meta.join(" · "));
     return clamp(parts.join("\n"));
   },
 
   council({ question, mode, panel, consensus, synthesis, cost, duration }) {
-    const parts = [TG.title("🧠", "شورای هوش مصنوعی"), TG.divider()];
-    if (question) parts.push(TG.kv("پرسش", question), "");
-    if (mode) parts.push(TG.kv("حالت", mode), "");
+    const parts = [TG.title("🧠", pxText("شورای هوش مصنوعی")), TG.divider()];
+    if (question) parts.push(TG.kv(pxText("پرسش"), question), "");
+    if (mode) parts.push(TG.kv(pxText("حالت"), mode), "");
     if (panel && panel.length) {
-      parts.push(TG.section("👥 پنل"));
+      parts.push(TG.section(pxText("👥 پنل")));
       parts.push(panel.map(p => `• ${p.role ? TG.b(nameSafe(p.role)) + " — " : ""}${esc(p.model || "")}${p.tone ? " " + TG.dot(p.tone) : ""}`).join("\n"));
       parts.push("");
     }
-    if (consensus !== undefined && consensus !== null) parts.push(TG.section("📊 اجماع"), TG.mono(TG.progress(consensus)), "");
-    if (synthesis) parts.push(TG.section("💡 سنتز نهایی"), safe(synthesis), "");
+    if (consensus !== undefined && consensus !== null) parts.push(TG.section(pxText("📊 اجماع")), TG.mono(TG.progress(consensus)), "");
+    if (synthesis) parts.push(TG.section(pxText("💡 سنتز نهایی")), safe(synthesis), "");
     const meta = [];
     if (cost) meta.push(`💵 ${esc(cost)}`);
     if (duration) meta.push(`⏱ ${esc(duration)}`);
@@ -140,29 +141,29 @@ export const TGM = {
   },
 
   agent({ name, goal, steps, result, duration, tools }) {
-    const parts = [TG.title("🤝", name || "ایجنت هوشمند"), TG.divider()];
-    if (goal) parts.push(TG.kv("هدف", goal), "");
-    if (tools && tools.length) parts.push(TG.kv("ابزارها", tools.map(esc).join(", ")), "");
+    const parts = [TG.title("🤝", name || pxText("ایجنت هوشمند")), TG.divider()];
+    if (goal) parts.push(TG.kv(pxText("هدف"), goal), "");
+    if (tools && tools.length) parts.push(TG.kv(pxText("ابزارها"), tools.map(esc).join(", ")), "");
     if (steps && steps.length) {
-      parts.push(TG.section("مراحل"));
+      parts.push(TG.section(pxText("مراحل")));
       parts.push(steps.map(s => {
         const icon = s.state === "run" ? "◉" : s.state === "err" || s.state === "fail" ? "✕" : s.state === "wait" ? "○" : "✓";
         return `${icon} ${esc(s.label || s.name || "")}${s.meta ? ` <i>${esc(s.meta)}</i>` : ""}`;
       }).join("\n"));
       parts.push("");
     }
-    if (result) parts.push(TG.section("نتیجه"), safe(result), "");
+    if (result) parts.push(TG.section(pxText("نتیجه")), safe(result), "");
     if (duration) parts.push(TG.divider(), `⏱ ${esc(duration)}`);
     return clamp(parts.join("\n"));
   },
 
   wizard({ step, total, title, hint, current, body, example }) {
     const parts = [`🧩 <b>${esc(title)}</b>`];
-    if (total) parts.push(`<i>مرحله ${esc(step)} از ${esc(total)}</i>`);
+    if (total) parts.push(pxTemplate`<i>مرحله ${esc(step)} از ${esc(total)}</i>`);
     parts.push(TG.divider());
     if (body) parts.push(safe(body), "");
-    if (example) parts.push(TG.quote("مثال: " + TG.mono(example)));
-    if (current) parts.push("", TG.kv("مقدار فعلی", current));
+    if (example) parts.push(TG.quote(pxText("مثال: ") + TG.mono(example)));
+    if (current) parts.push("", TG.kv(pxText("مقدار فعلی"), current));
     if (hint) parts.push("", TG.i(hint));
     return clamp(parts.join("\n"));
   },
@@ -172,7 +173,7 @@ export const TGM = {
     const parts = [TG.title(icon || "📋", title)];
     if (sub) parts.push(TG.i(sub));
     parts.push(TG.divider(), body || "");
-    if (pages && pages > 1) parts.push(TG.divider(), `صفحه <b>${esc(page)}</b> از <b>${esc(pages)}</b>${total !== undefined ? ` · ${esc(total)} مورد` : ""}`);
+    if (pages && pages > 1) parts.push(TG.divider(), pxTemplate`صفحه <b>${esc(page)}</b> از <b>${esc(pages)}</b>${total !== undefined ? pxTemplate` · ${esc(total)} مورد` : ""}`);
     return clamp(parts.join("\n"));
   },
 
@@ -190,7 +191,7 @@ export const TGM = {
   },
 
   stats({ title, sub, rows, footer }) {
-    const parts = [TG.title("📊", title || "آمار و وضعیت")];
+    const parts = [TG.title("📊", title || pxText("آمار و وضعیت"))];
     if (sub) parts.push(TG.i(sub));
     parts.push(TG.divider());
     if (rows && rows.length) {
@@ -201,27 +202,27 @@ export const TGM = {
   },
 
   success({ title, body, id, next }) {
-    const parts = [TG.title("✅", title || "انجام شد"), TG.divider()];
+    const parts = [TG.title("✅", title || pxText("انجام شد")), TG.divider()];
     if (body) parts.push(body);
-    if (id) parts.push("", TG.kv("شناسه", id));
+    if (id) parts.push("", TG.kv(pxText("شناسه"), id));
     if (next) parts.push("", TG.quote(next));
     return clamp(parts.join("\n"));
   },
 
   error({ title, message, reason, hint, retriable }) {
-    const parts = [`⚠️ <b>${esc(title || "مشکلی پیش آمد")}</b>`, TG.divider()];
+    const parts = [`⚠️ <b>${esc(title || pxText("مشکلی پیش آمد"))}</b>`, TG.divider()];
     if (message) parts.push(esc(message));
-    if (reason) parts.push("", TG.kv("دلیل", reason));
+    if (reason) parts.push("", TG.kv(pxText("دلیل"), reason));
     if (hint) parts.push("", TG.quote(hint));
-    if (retriable) parts.push("", TG.i("میتوانید دوباره تلاش کنید."));
+    if (retriable) parts.push("", TG.i(pxText("میتوانید دوباره تلاش کنید.")));
     return clamp(parts.join("\n"));
   },
 
   loading({ title, steps, note, progress }) {
-    const parts = [`🧠 <b>${esc(title || "در حال پردازش…")}</b>`];
+    const parts = [`🧠 <b>${esc(title || pxText("در حال پردازش…"))}</b>`];
     if (progress !== undefined && progress !== null) parts.push("", `<code>${TG.progress(progress, 12)}</code>`);
     if (steps && steps.length) parts.push("", steps.join("\n"));
-    parts.push("", `<i>${esc(note || "این پیام بهروزرسانی میشود.")}</i>`);
+    parts.push("", `<i>${esc(note || pxText("این پیام بهروزرسانی میشود."))}</i>`);
     return clamp(parts.join("\n"));
   }
 };
@@ -250,22 +251,22 @@ export const KB = {
   nav({ back, home = true, appUrl, appLabel } = {}) {
     const rows = [];
     const row = [];
-    if (back) row.push(KB.btn("‹ بازگشت", back));
-    if (home) row.push(KB.btn("🏠 منو", "menu"));
+    if (back) row.push(KB.btn(pxText("‹ بازگشت"), back));
+    if (home) row.push(KB.btn(pxText("🏠 منو"), "menu"));
     if (row.length) rows.push(row);
     if (appUrl) rows.push([KB.webapp(appLabel || "🚀 Mini App", appUrl)]);
     return rows;
   },
-  confirm({ yes = "yes", no = "no", yesLabel = "تأیید", noLabel = "لغو" } = {}) {
+  confirm({ yes = "yes", no = "no", yesLabel = pxText("تأیید"), noLabel = pxText("لغو") } = {}) {
     return [[KB.btn("✅ " + yesLabel, yes), KB.btn("✕ " + noLabel, no)]];
   },
   toggle(label, on, data) { return [KB.btn(`${on ? "🟢" : "⚪"} ${label}`, data)]; },
   pager(prefix, page, pages) {
     if (!pages || pages <= 1) return [];
     const row = [];
-    if (page > 0) row.push(KB.btn("‹ قبلی", `${prefix}:${page - 1}`));
+    if (page > 0) row.push(KB.btn(pxText("‹ قبلی"), `${prefix}:${page - 1}`));
     row.push(KB.btn(`${page + 1} / ${pages}`, "noop"));
-    if (page + 1 < pages) row.push(KB.btn("بعدی ›", `${prefix}:${page + 1}`));
+    if (page + 1 < pages) row.push(KB.btn(pxText("بعدی ›"), `${prefix}:${page + 1}`));
     return [row];
   },
   merge(...groups) { return [].concat(...groups.filter(Boolean)); }

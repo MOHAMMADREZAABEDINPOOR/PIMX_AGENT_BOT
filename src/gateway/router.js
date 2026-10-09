@@ -1,3 +1,4 @@
+import { pxText, pxTemplate } from '../i18n/server.js';
 // ─────────────────────────────────────────────
 // 🧭 Intelligent Router — انتخاب مدل، Load Balancing، Failover
 // ─────────────────────────────────────────────
@@ -11,10 +12,10 @@ import {
 } from "./models.js";
 
 export const POLICIES = {
-  balanced: { label: "متعادل", weights: { quality: 35, speed: 25, reliability: 25, cost: 15 } },
-  quality: { label: "کیفیت", weights: { quality: 65, speed: 10, reliability: 20, cost: 5 } },
-  speed: { label: "سرعت", weights: { quality: 15, speed: 60, reliability: 20, cost: 5 } },
-  cost: { label: "هزینه", weights: { quality: 15, speed: 15, reliability: 20, cost: 50 } }
+  balanced: { get label(){return pxText("متعادل")}, weights: { quality: 35, speed: 25, reliability: 25, cost: 15 } },
+  quality: { get label(){return pxText("کیفیت")}, weights: { quality: 65, speed: 10, reliability: 20, cost: 5 } },
+  speed: { get label(){return pxText("سرعت")}, weights: { quality: 15, speed: 60, reliability: 20, cost: 5 } },
+  cost: { get label(){return pxText("هزینه")}, weights: { quality: 15, speed: 15, reliability: 20, cost: 50 } }
 };
 
 export const LB_STRATEGIES = ["adaptive", "roundRobin", "leastLatency", "lowestCost", "weighted"];
@@ -39,8 +40,8 @@ export async function getRoutingConfig(env) {
 export async function setRoutingConfig(env, patch, userId = 0) {
   const cfg = await getRoutingConfig(env);
   const next = { ...cfg, ...patch };
-  if (patch.policy && !POLICIES[patch.policy]) throw new Error("policy نامعتبر");
-  if (patch.strategy && !LB_STRATEGIES.includes(patch.strategy)) throw new Error("strategy نامعتبر");
+  if (patch.policy && !POLICIES[patch.policy]) throw new Error(pxText("policy نامعتبر"));
+  if (patch.strategy && !LB_STRATEGIES.includes(patch.strategy)) throw new Error(pxText("strategy نامعتبر"));
   await kvPut(env, CFG_KEY, next);
   await audit(env, { userId, action: "routing.update", resource: "config", meta: { fields: Object.keys(patch) } });
   return next;
@@ -168,7 +169,7 @@ export async function selectModels(env, { text = "", task, opts = {} } = {}) {
 export async function route(env, messages, opts = {}) {
   const text = typeof opts.text === "string" ? opts.text : messages.filter(m => m.role === "user").map(m => (typeof m.content === "string" ? m.content : "")).join(" ");
   const { task, chain, config } = await selectModels(env, { text, task: opts.task, opts });
-  if (!chain.length) throw new Error("هیچ مدل سالمی در رجیستری موجود نیست. ابتدا یک پروایدر اضافه کنید.");
+  if (!chain.length) throw new Error(pxText("هیچ مدل سالمی در رجیستری موجود نیست. ابتدا یک پروایدر اضافه کنید."));
 
   // Try cache first (if enabled and not streaming and not explicitly disabled)
   const useCache = config.enableCache && !opts.onChunk && !opts.skipCache && opts.useCache !== false;
@@ -250,7 +251,7 @@ export async function route(env, messages, opts = {}) {
       }
     }
   }
-  const err = new Error(`همه ${attempts.length} مدل ناموفق بودند: ${attempts.map(a => `${a.model} (${a.error})`).join(" · ").slice(0, 300)}`);
+  const err = new Error(pxTemplate`همه ${attempts.length} مدل ناموفق بودند: ${attempts.map(a => `${a.model} (${a.error})`).join(" · ").slice(0, 300)}`);
   err.attempts = attempts;
   throw err;
 }
@@ -268,7 +269,7 @@ export async function complete(env, prompt, opts = {}) {
 export async function completeJson(env, prompt, opts = {}) {
   const res = await complete(env, prompt, { ...opts, json: true, task: opts.task || "data" });
   const m = (res.text || "").match(/\{[\s\S]*\}|\[[\s\S]*\]/);
-  if (!m) throw new Error("پاسخ JSON معتبر نبود");
+  if (!m) throw new Error(pxText("پاسخ JSON معتبر نبود"));
   return { json: JSON.parse(m[0]), raw: res };
 }
 

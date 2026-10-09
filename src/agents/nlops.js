@@ -1,3 +1,4 @@
+import { pxText, pxTemplate } from '../i18n/server.js';
 // ─────────────────────────────────────────────
 // 🗣 Natural Language Infrastructure Control
 // دستور زبان طبیعی → عملیات واقعی روی رجیستری (با تأیید برای عملیات مخرب)
@@ -151,11 +152,11 @@ export async function execute(env, { intent, args = {} }, { userId = 0, onProgre
 
   switch (intent) {
     case "provider.add": {
-      if (!args.baseUrl) return { needsInput: "baseUrl", message: "Base URL پروایدر را بفرستید (مثل https://api.example.com/v1)" };
+      if (!args.baseUrl) return { needsInput: "baseUrl", message: pxText("Base URL پروایدر را بفرستید (مثل https://api.example.com/v1)") };
       const keyList = Array.isArray(args.apiKeys) && args.apiKeys.length
         ? args.apiKeys
         : (args.apiKey ? [args.apiKey] : []);
-      await say("🔍 بررسی اتصال و سازگاری…");
+      await say(pxText("🔍 بررسی اتصال و سازگاری…"));
       const diag = await diagnose({ baseUrl: args.baseUrl, apiKey: keyList[0] || "", format: args.format || "openai" });
       const provider = await createProvider(env, {
         name: args.name || guessName(args.baseUrl),
@@ -164,13 +165,13 @@ export async function execute(env, { intent, args = {} }, { userId = 0, onProgre
         format: diag.info?.suggestedFormat || args.format || "openai",
         tags: args.tags
       }, userId);
-      await say("📦 کشف مدلها…");
+      await say(pxText("📦 کشف مدلها…"));
       const disc = await discoverModels(env, provider.id, userId).catch(() => ({ models: [], found: 0, created: 0 }));
       let tested = [];
       if (disc.models.length) {
         const ids = disc.models.slice(0, args.testLimit || 12).map(m => m.id);
-        await say(`🧪 تست ${ids.length} مدل…`);
-        tested = await testModels(env, ids, ["basic"], { userId, concurrency: 4, onProgress: p => say(`🧪 تست مدلها ${p.done}/${p.total}`) });
+        await say(pxTemplate`🧪 تست ${ids.length} مدل…`);
+        tested = await testModels(env, ids, ["basic"], { userId, concurrency: 4, onProgress: p => say(pxTemplate`🧪 تست مدلها ${p.done}/${p.total}`) });
       }
       const healthy = tested.filter(t => t.model?.status === "healthy").length;
       const models = await listModels(env, { providerId: provider.id });
@@ -188,9 +189,9 @@ export async function execute(env, { intent, args = {} }, { userId = 0, onProgre
 
     case "provider.bulkAdd": {
       const keys = Array.isArray(args.keys) ? args.keys : parseKeys(args.keys || "");
-      if (!args.baseUrl) return { needsInput: "baseUrl", message: "Base URL را بفرستید" };
-      if (!keys.length) return { needsInput: "keys", message: "کلیدها را بفرستید (هر خط یک کلید یا JSON)" };
-      await say(`📦 ساخت ${keys.length} پروایدر…`);
+      if (!args.baseUrl) return { needsInput: "baseUrl", message: pxText("Base URL را بفرستید") };
+      if (!keys.length) return { needsInput: "keys", message: pxText("کلیدها را بفرستید (هر خط یک کلید یا JSON)") };
+      await say(pxTemplate`📦 ساخت ${keys.length} پروایدر…`);
       const created = await bulkCreateProviders(env, {
         baseUrl: args.baseUrl, keys,
         nameTemplate: args.nameTemplate || `${guessName(args.baseUrl)}-{n}`,
@@ -199,7 +200,7 @@ export async function execute(env, { intent, args = {} }, { userId = 0, onProgre
       const report = [];
       for (let i = 0; i < created.length; i++) {
         const p = created[i];
-        await say(`🧪 اعتبارسنجی ${i + 1}/${created.length}`);
+        await say(pxTemplate`🧪 اعتبارسنجی ${i + 1}/${created.length}`);
         const d = await diagnose({ baseUrl: p.baseUrl, apiKey: (await keyOf(env, p)), format: p.format });
         const authStep = d.steps.find(s => s.name === "Authentication");
         const rateLimited = d.steps.some(s => /429/.test(s.detail || ""));
@@ -234,7 +235,7 @@ export async function execute(env, { intent, args = {} }, { userId = 0, onProgre
 
     case "provider.delete": {
       const p = await resolveProvider(env, args);
-      if (!p) return { error: "پروایدر پیدا نشد. نام دقیق را بگویید." };
+      if (!p) return { error: pxText("پروایدر پیدا نشد. نام دقیق را بگویید.") };
       const models = await listModels(env, { providerId: p.id });
       const cfg = await getRoutingConfig(env);
       const rules = cfg.rules.filter(r => r.providerId === p.id).length;
@@ -244,7 +245,7 @@ export async function execute(env, { intent, args = {} }, { userId = 0, onProgre
           intent: "provider.delete",
           args: { providerId: p.id },
           summary: { provider: p.name, models: models.length, rules },
-          message: `حذف پروایدر «${p.name}» — ${models.length} مدل و ${rules} قانون مسیریابی غیرفعال میشوند.`
+          message: pxTemplate`حذف پروایدر «${p.name}» — ${models.length} مدل و ${rules} قانون مسیریابی غیرفعال میشوند.`
         };
       }
       for (const m of models) await deleteModel(env, m.id, userId);
@@ -265,9 +266,9 @@ export async function execute(env, { intent, args = {} }, { userId = 0, onProgre
         return { type: "provider.toggled", count: n, enabled: enable };
       }
       const p = await resolveProvider(env, args);
-      if (!p) return { error: "پروایدر پیدا نشد" };
+      if (!p) return { error: pxText("پروایدر پیدا نشد") };
       if (!enable && !confirmed) {
-        return { type: "confirm", intent: "provider.disable", args: { providerId: p.id }, summary: { provider: p.name }, message: `غیرفعالسازی «${p.name}»؟` };
+        return { type: "confirm", intent: "provider.disable", args: { providerId: p.id }, summary: { provider: p.name }, message: pxTemplate`غیرفعالسازی «${p.name}»؟` };
       }
       await updateProvider(env, p.id, { enabled: enable }, userId);
       return { type: "provider.toggled", count: 1, enabled: enable, provider: p.name };
@@ -275,7 +276,7 @@ export async function execute(env, { intent, args = {} }, { userId = 0, onProgre
 
     case "provider.rename": {
       const p = await resolveProvider(env, args);
-      if (!p || !args.name) return { error: "پروایدر یا نام جدید مشخص نیست" };
+      if (!p || !args.name) return { error: pxText("پروایدر یا نام جدید مشخص نیست") };
       await updateProvider(env, p.id, { name: args.name }, userId);
       return { type: "provider.renamed", from: p.name, to: args.name };
     }
@@ -285,10 +286,10 @@ export async function execute(env, { intent, args = {} }, { userId = 0, onProgre
       let baseUrl = args.baseUrl, apiKey = args.apiKey, format = args.format || "openai";
       if (!baseUrl) {
         const p = await resolveProvider(env, args);
-        if (!p) return { needsInput: "baseUrl", message: "Base URL یا نام پروایدر را بگویید" };
+        if (!p) return { needsInput: "baseUrl", message: pxText("Base URL یا نام پروایدر را بگویید") };
         baseUrl = p.baseUrl; apiKey = await keyOf(env, p); format = p.format;
       }
-      await say("🩺 اجرای API Doctor…");
+      await say(pxText("🩺 اجرای API Doctor…"));
       const d = await diagnose({ baseUrl, apiKey, format });
       await audit(env, { userId, action: "doctor.run", resource: baseUrl, result: d.ok ? "ok" : "fail" });
       return { type: "doctor", report: d };
@@ -296,23 +297,23 @@ export async function execute(env, { intent, args = {} }, { userId = 0, onProgre
 
     case "model.discover": {
       const p = await resolveProvider(env, args);
-      if (!p) return { error: "پروایدر مشخص نیست. اول پروایدر را اضافه کنید." };
-      await say("📦 کشف مدلها…");
+      if (!p) return { error: pxText("پروایدر مشخص نیست. اول پروایدر را اضافه کنید.") };
+      await say(pxText("📦 کشف مدلها…"));
       const d = await discoverModels(env, p.id, userId);
       return { type: "model.discovered", provider: p.name, found: d.found, created: d.created, path: d.path, total: d.models.length };
     }
 
     case "model.add": {
       const p = await resolveProvider(env, args);
-      if (!p) return { error: "پروایدر مشخص نیست" };
+      if (!p) return { error: pxText("پروایدر مشخص نیست") };
       const ids = args.models?.length ? args.models : (args.model ? [args.model] : []);
-      if (!ids.length) return { needsInput: "model", message: "شناسه مدل را بفرستید (هر خط یک مدل)" };
+      if (!ids.length) return { needsInput: "model", message: pxText("شناسه مدل را بفرستید (هر خط یک مدل)") };
       const added = [];
       for (const id of ids) {
         const { model } = await upsertModel(env, p, id, { displayName: args.displayName, contextWindow: args.contextWindow, capabilities: args.capabilities, pricing: args.pricing });
         added.push(model);
       }
-      await say(`🧪 تست ${added.length} مدل…`);
+      await say(pxTemplate`🧪 تست ${added.length} مدل…`);
       const tested = await testModels(env, added.map(m => m.id), ["basic"], { userId });
       return {
         type: "model.added", provider: p.name, count: added.length,
@@ -338,8 +339,8 @@ export async function execute(env, { intent, args = {} }, { userId = 0, onProgre
 
     case "model.test": {
       const m = await resolveModel(env, args);
-      if (!m) return { error: "مدل پیدا نشد" };
-      await say(`🧪 تست ${m.displayName}…`);
+      if (!m) return { error: pxText("مدل پیدا نشد") };
+      await say(pxTemplate`🧪 تست ${m.displayName}…`);
       const r = await testModel(env, m.id, args.tests || DEFAULT_TESTS, userId);
       return { type: "model.tested", model: slim(r.model), results: r.results, passed: r.passed, total: r.total };
     }
@@ -350,10 +351,10 @@ export async function execute(env, { intent, args = {} }, { userId = 0, onProgre
       if (args.status) rows = rows.filter(m => m.status === args.status);
       const limit = Math.min(rows.length, Number(args.limit || 60));
       rows = rows.slice(0, limit);
-      if (!rows.length) return { error: "مدلی برای تست وجود ندارد" };
+      if (!rows.length) return { error: pxText("مدلی برای تست وجود ندارد") };
       const results = await testModels(env, rows.map(m => m.id), args.tests || ["basic"], {
         userId, concurrency: 4,
-        onProgress: p => say(`🧪 ${p.done}/${p.total} مدل تست شد`)
+        onProgress: p => say(pxTemplate`🧪 ${p.done}/${p.total} مدل تست شد`)
       });
       const healthy = results.filter(r => r.model?.status === "healthy").length;
       return {
@@ -364,20 +365,20 @@ export async function execute(env, { intent, args = {} }, { userId = 0, onProgre
 
     case "model.delete": {
       const m = await resolveModel(env, args);
-      if (!m) return { error: "مدل پیدا نشد" };
-      if (!confirmed) return { type: "confirm", intent: "model.delete", args: { modelId: m.id }, summary: { model: m.displayName, provider: m.providerName }, message: `حذف مدل «${m.displayName}»؟` };
+      if (!m) return { error: pxText("مدل پیدا نشد") };
+      if (!confirmed) return { type: "confirm", intent: "model.delete", args: { modelId: m.id }, summary: { model: m.displayName, provider: m.providerName }, message: pxTemplate`حذف مدل «${m.displayName}»؟` };
       await deleteModel(env, m.id, userId);
       return { type: "model.deleted", model: m.displayName };
     }
 
     case "model.deleteUnhealthy": {
       const rows = (await listModels(env)).filter(m => m.status === "failed" || (m.status === "degraded" && (m.errorRate || 0) > 50));
-      if (!rows.length) return { type: "model.deleted", count: 0, message: "همه مدلها سالماند — چیزی حذف نشد." };
+      if (!rows.length) return { type: "model.deleted", count: 0, message: pxText("همه مدلها سالماند — چیزی حذف نشد.") };
       if (!confirmed) {
         return {
           type: "confirm", intent: "model.deleteUnhealthy", args: {},
           summary: { count: rows.length, models: rows.slice(0, 15).map(m => `${m.displayName} (${m.providerName})`) },
-          message: `${rows.length} مدل ناسالم پیدا شد. حذف شوند؟`
+          message: pxTemplate`${rows.length} مدل ناسالم پیدا شد. حذف شوند؟`
         };
       }
       for (const m of rows) await deleteModel(env, m.id, userId);
@@ -392,12 +393,12 @@ export async function execute(env, { intent, args = {} }, { userId = 0, onProgre
       else if (args.status) rows = await listModels(env, { status: args.status });
       else if (args.all) rows = await listModels(env);
       else { const m = await resolveModel(env, args); if (m) rows = [m]; }
-      if (!rows.length) return { error: "مدلی مطابق شرط پیدا نشد" };
+      if (!rows.length) return { error: pxText("مدلی مطابق شرط پیدا نشد") };
       if (!enable && !confirmed) {
         return {
           type: "confirm", intent: "model.disable", args,
           summary: { count: rows.length, models: rows.slice(0, 15).map(m => `${m.displayName} · ${m.latency ?? "?"}ms`) },
-          message: `${rows.length} مدل غیرفعال شود؟`
+          message: pxTemplate`${rows.length} مدل غیرفعال شود؟`
         };
       }
       for (const m of rows) { m.enabled = enable; await saveModel(env, m); }
@@ -412,7 +413,7 @@ export async function execute(env, { intent, args = {} }, { userId = 0, onProgre
       let rows = all.filter(m => m.enabled && m.status !== "failed");
       if (args.capability) rows = rows.filter(m => m.capabilities?.[args.capability]?.supported);
       if (args.status !== "any") rows = rows.filter(m => m.status === "healthy" || m.status === "unknown");
-      if (!rows.length) return { error: "مدل مطابق شرط در رجیستری نیست. اول مدلها را تست/اضافه کنید." };
+      if (!rows.length) return { error: pxText("مدل مطابق شرط در رجیستری نیست. اول مدلها را تست/اضافه کنید.") };
       const weights = await getWeights(env);
       let sorted;
       if (intent === "model.cheapest") sorted = rows.sort((a, b) => (costPer1M(a) ?? 9e9) - (costPer1M(b) ?? 9e9) || (a.latency || 9e9) - (b.latency || 9e9));
@@ -430,7 +431,7 @@ export async function execute(env, { intent, args = {} }, { userId = 0, onProgre
         const r = await execute(env, { intent: `model.${args.criteria}`, args: { capability: args.capability } }, { userId });
         if (r.models?.length) m = await getModel(env, r.models[0].id);
       }
-      if (!m) return { error: "مدل مشخص نشد" };
+      if (!m) return { error: pxText("مدل مشخص نشد") };
       await setRoutingConfig(env, { defaultModelId: m.id }, userId);
       return { type: "routing.default", model: slim(m) };
     }
@@ -441,9 +442,9 @@ export async function execute(env, { intent, args = {} }, { userId = 0, onProgre
         const m = await resolveModel(env, { model: n });
         if (m) ids.push(m.id);
       }
-      if (ids.length < 2) return { error: "حداقل دو مدل معتبر لازم است" };
+      if (ids.length < 2) return { error: pxText("حداقل دو مدل معتبر لازم است") };
       const { compareModels } = await import("../gateway/benchmark.js");
-      await say(`⚖️ مقایسه ${ids.length} مدل…`);
+      await say(pxTemplate`⚖️ مقایسه ${ids.length} مدل…`);
       return { type: "model.compare", rows: await compareModels(env, ids, args.tasks || QUICK_TASKS) };
     }
 
@@ -458,10 +459,10 @@ export async function execute(env, { intent, args = {} }, { userId = 0, onProgre
         if (args.provider) { const p = await resolveProvider(env, args); if (p) rows = rows.filter(m => m.providerId === p.id); }
         ids = rows.slice(0, Number(args.limit || 5)).map(m => m.id);
       }
-      if (!ids.length) return { error: "مدل سالمی برای بنچمارک نیست" };
+      if (!ids.length) return { error: pxText("مدل سالمی برای بنچمارک نیست") };
       const run = await runBenchmark(env, {
         modelIds: ids, tasks: args.tasks || QUICK_TASKS, userId,
-        onProgress: p => say(`🏁 بنچمارک ${p.done}/${p.total}`)
+        onProgress: p => say(pxTemplate`🏁 بنچمارک ${p.done}/${p.total}`)
       });
       return { type: "benchmark", run };
     }
@@ -474,7 +475,7 @@ export async function execute(env, { intent, args = {} }, { userId = 0, onProgre
     case "routing.rule": {
       const p = args.provider ? await resolveProvider(env, args) : null;
       const m = args.model ? await resolveModel(env, args) : null;
-      if (!p && !m) return { error: "برای قانون، پروایدر یا مدل مشخص کنید" };
+      if (!p && !m) return { error: pxText("برای قانون، پروایدر یا مدل مشخص کنید") };
       const rule = await addRule(env, { task: args.task || "chat", providerId: p?.id || null, modelId: m?.id || null, priority: args.priority || 10 }, userId);
       return { type: "routing.rule", rule, target: p?.name || m?.displayName };
     }
@@ -482,10 +483,10 @@ export async function execute(env, { intent, args = {} }, { userId = 0, onProgre
     case "routing.failover": {
       const primary = await resolveProvider(env, { name: args.provider || args.primary });
       const backup = await resolveProvider(env, { name: args.fallback || args.backup });
-      if (!primary || !backup) return { error: "پروایدر اصلی و پشتیبان را مشخص کنید" };
+      if (!primary || !backup) return { error: pxText("پروایدر اصلی و پشتیبان را مشخص کنید") };
       const pm = (await listModels(env, { providerId: primary.id })).filter(m => m.status !== "failed");
       const bm = (await listModels(env, { providerId: backup.id })).filter(m => m.status !== "failed");
-      if (!pm.length || !bm.length) return { error: "مدل سالم در یکی از پروایدرها نیست" };
+      if (!pm.length || !bm.length) return { error: pxText("مدل سالم در یکی از پروایدرها نیست") };
       const rule = await addRule(env, { task: args.task || "chat", providerId: primary.id, modelId: pm[0].id, fallbackModelIds: bm.slice(0, 3).map(m => m.id), priority: 20 }, userId);
       return { type: "routing.failover", rule, primary: primary.name, backup: backup.name };
     }

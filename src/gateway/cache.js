@@ -4,6 +4,7 @@
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 import crypto from "crypto";
+import { currentLanguage } from '../i18n/server.js';
 
 const CACHE_TTL_DEFAULT = 3600; // 1 hour
 const CACHE_TTL_SHORT = 600; // 10 minutes (for dynamic context)
@@ -32,6 +33,7 @@ export function generateCacheKey(request) {
 
   // Create cache key components
   const components = {
+    language: currentLanguage(),
     model: model || "unknown",
     modelVersion: modelVersion || "default",
     messagesHash: hashContent(normalizedMessages),

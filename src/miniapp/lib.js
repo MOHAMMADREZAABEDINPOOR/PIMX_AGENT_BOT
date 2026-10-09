@@ -49,7 +49,7 @@ window.S = S;
 /* ═══════════ API ═══════════ */
 async function api(path, opts) {
   opts = opts || {};
-  const headers = { "Content-Type": "application/json" };
+  const headers = { "Content-Type": "application/json", "X-PIMX-Language": PX_LANGUAGE };
   if (S.token) headers.Authorization = "Bearer " + S.token;
   else if (tgInitData()) headers["X-Telegram-Init-Data"] = tgInitData();
   const ctrl = new AbortController();
@@ -71,12 +71,12 @@ async function api(path, opts) {
       e.hint = j && j.hint; e.status = res.status; e.data = j && j.data;
       throw e;
     }
-    if (!j) throw new Error("پاسخ نامعتبر از سرور");
+    if (!j) throw new Error(pxText("پاسخ نامعتبر از سرور"));
     return j.data;
   } catch (err) {
     if (err.name === "AbortError") {
-      const e = new Error("درخواست طولانی شد (timeout)");
-      e.hint = "سرور در " + Math.round(to / 1000) + " ثانیه پاسخ نداد";
+      const e = new Error(pxText("درخواست طولانی شد (timeout)"));
+      e.hint = pxText("سرور در ") + Math.round(to / 1000) + pxText(" ثانیه پاسخ نداد");
       throw e;
     }
     throw err;
@@ -128,9 +128,9 @@ function usd(v) {
   return "$" + v.toFixed(2);
 }
 function price(v, free) {
-  if (free) return "رایگان";
+  if (free) return pxText("رایگان");
   if (v === null || v === undefined || isNaN(v)) return "—";
-  return Number(v) === 0 ? "رایگان" : usd(v);
+  return Number(v) === 0 ? pxText("رایگان") : usd(v);
 }
 function pct(v) { return v === null || v === undefined || isNaN(v) ? "—" : Math.round(Number(v)) + "%"; }
 function bytes(v) {
@@ -143,19 +143,19 @@ function dt(v) {
   if (!v) return "—";
   const d = new Date(v);
   if (isNaN(d.getTime())) return "—";
-  return d.toLocaleString("fa-IR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleString(pxLocale(), { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 function rel(v) {
   if (!v) return "—";
   const t = new Date(v).getTime();
   if (isNaN(t)) return "—";
   const d = Date.now() - t;
-  if (d < 0) return "به‌زودی";
+  if (d < 0) return pxText("به‌زودی");
   const s = Math.floor(d / 1000);
-  if (s < 60) return "همین الان";
-  if (s < 3600) return Math.floor(s / 60) + " دقیقه پیش";
-  if (s < 86400) return Math.floor(s / 3600) + " ساعت پیش";
-  if (s < 2592000) return Math.floor(s / 86400) + " روز پیش";
+  if (s < 60) return pxText("همین الان");
+  if (s < 3600) return Math.floor(s / 60) + pxText(" دقیقه پیش");
+  if (s < 86400) return Math.floor(s / 3600) + pxText(" ساعت پیش");
+  if (s < 2592000) return Math.floor(s / 86400) + pxText(" روز پیش");
   return dt(v);
 }
 function short(s, len) { s = String(s || ""); return s.length > (len || 40) ? s.slice(0, len || 40) + "…" : s; }
@@ -209,7 +209,7 @@ function md(t) {
       const code = nl >= 0 ? part.slice(nl + 1) : part;
       const codeId = "code_" + Math.random().toString(36).slice(2, 8);
       return '<div class="code-box"><div class="code-head"><span>' + (lang || "CODE") + '</span>' +
-        '<button class="copy-btn" onclick="copyCode(this, \'' + codeId + '\')">کپی کد</button></div>' +
+        '<button class="copy-btn" onclick="copyCode(this, \'' + codeId + pxText('\')">کپی کد</button></div>') +
         '<pre class="code-body"><code id="' + codeId + '">' + code.replace(/\n$/, "") + '</code></pre></div>';
     }
     return part;
@@ -244,10 +244,10 @@ window.copyCode = function(btn, id) {
   if (!el) return;
   if (navigator.clipboard) {
     navigator.clipboard.writeText(el.textContent).then(function() {
-      btn.textContent = "✓ کپی شد";
+      btn.textContent = pxText("✓ کپی شد");
       btn.style.background = "var(--ok)";
-      setTimeout(function() { btn.textContent = "کپی کد"; btn.style.background = ""; }, 2000);
-      toast("کد در کلیپ‌بورد کپی شد", "ok");
+      setTimeout(function() { btn.textContent = pxText("کپی کد"); btn.style.background = ""; }, 2000);
+      toast(pxText("کد در کلیپ‌بورد کپی شد"), "ok");
     });
   }
 };
@@ -352,12 +352,12 @@ function empty(o) {
   o = o || {};
   return '<div class="empty">' +
     '<div class="ei">' + (o.icon || "◈") + '</div>' +
-    '<div class="et">' + h(o.title || "چیزی برای نمایش وجود ندارد") + '</div>' +
+    '<div class="et">' + h(o.title || pxText("چیزی برای نمایش وجود ندارد")) + '</div>' +
     (o.sub ? '<div class="es">' + h(o.sub) + '</div>' : '') +
     (o.btn ? '<button class="btn pri sm"' + o.btn.on + '>' + h(o.btn.t) + '</button>' : '') + '</div>';
 }
 function loading(t) {
-  return '<div class="loading-box"><div class="spin"></div><span>' + h(t || "در حال آماده‌سازی اطلاعات…") + '</span></div>' + skel(3);
+  return '<div class="loading-box"><div class="spin"></div><span>' + h(t || pxText("در حال آماده‌سازی اطلاعات…")) + '</span></div>' + skel(3);
 }
 function skel(rows) {
   let s = "";
@@ -369,22 +369,22 @@ function skel(rows) {
   return s;
 }
 function errBox(e) {
-  const isAuth = (e && (e.status === 401 || (e.message && e.message.includes("احراز هویت"))));
+  const isAuth = (e && (e.status === 401 || (e.message && e.message.includes(pxText("احراز هویت")))));
   if (isAuth) {
     return '<div class="card" style="border-color:var(--acc-line);background:rgba(99,102,241,0.08);text-align:center;padding:24px 16px">' +
       '<div style="font-size:36px;margin-bottom:12px">🔐</div>' +
-      '<div class="card-t" style="color:var(--text);font-size:16px">احراز هویت تلگرام</div>' +
+      pxText('<div class="card-t" style="color:var(--text);font-size:16px">احراز هویت تلگرام</div>') +
       '<div style="font-size:13px;margin:8px auto;color:var(--text2);max-width:320px;line-height:1.6">' +
-      (e.hint || 'برای استفاده از پلتفرم، مینی‌اپ را از داخل تلگرام باز کنید.') + '</div>' +
+      (e.hint || pxText('برای استفاده از پلتفرم، مینی‌اپ را از داخل تلگرام باز کنید.')) + '</div>' +
       '<div class="row wrap" style="justify-content:center;gap:10px;margin-top:16px">' +
-      '<button class="btn pri" onclick="hardRefresh()">↻ تلاش دوباره</button>' +
+      pxText('<button class="btn pri" onclick="hardRefresh()">↻ تلاش دوباره</button>') +
       '</div></div>';
   }
   return '<div class="card" style="border-color:var(--bad-soft);background:rgba(244,63,94,0.06)">' +
-    '<div class="card-t" style="color:var(--bad)">⚠ خطا در دریافت اطلاعات</div>' +
+    pxText('<div class="card-t" style="color:var(--bad)">⚠ خطا در دریافت اطلاعات</div>') +
     '<div style="font-size:13px;margin:8px 0;color:var(--text)">' + h(e.message || e) + '</div>' +
     (e.hint ? '<div class="text-xs text-muted mb-2">' + h(e.hint) + '</div>' : '') +
-    '<button class="btn gho sm" onclick="render()">تلاش دوباره</button></div>';
+    pxText('<button class="btn gho sm" onclick="render()">تلاش دوباره</button></div>');
 }
 function note(text, kind, ic) {
   const bg = kind === "warn" ? "var(--warn-soft)" : kind === "bad" ? "var(--bad-soft)" : "var(--acc-soft)";
@@ -396,14 +396,14 @@ function note(text, kind, ic) {
 window.empty = empty; window.loading = loading; window.skel = skel; window.errBox = errBox; window.note = note;
 
 function codeBox(text, id) {
-  return '<div class="code-box"><div class="code-head"><span>OUTPUT</span><button class="copy-btn"' + act("copyEl", id || "") + '>کپی</button></div>' +
+  return '<div class="code-box"><div class="code-head"><span>OUTPUT</span><button class="copy-btn"' + act("copyEl", id || "") + pxText('>کپی</button></div>') +
     '<div class="code-body"' + (id ? ' id="' + id + '"' : "") + '>' + h(text) + '</div></div>';
 }
 window.copyEl = function (id) {
   haptic("impact", "light");
   const el = id ? document.getElementById(id) : null;
   const t = el ? el.textContent : "";
-  if (navigator.clipboard) navigator.clipboard.writeText(t).then(function () { toast("در کلیپ‌بورد کپی شد", "ok"); });
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(function () { toast(pxText("در کلیپ‌بورد کپی شد"), "ok"); });
 };
 window.codeBox = codeBox;
 
@@ -463,7 +463,7 @@ function sheet(o) {
     '<div id="sheetB" class="sheet-b">' + (o.body || "") + '</div>' +
     (o.foot === null ? "" : '<div class="mt-4 flex-between gap-2 sheet-f" id="sheetF">' +
       (o.foot !== undefined ? o.foot :
-        '<button class="btn btn-secondary flex-1" onclick="closeSheet()">' + h(o.cancelText || "انصراف") + '</button>' +
+        '<button class="btn btn-secondary flex-1" onclick="closeSheet()">' + h(o.cancelText || pxText("انصراف")) + '</button>' +
         (o.okText ? '<button class="btn btn-primary flex-1" id="sheetOk">' + h(o.okText) + '</button>' : '')) + '</div>');
 
   overlay.appendChild(s);
@@ -475,7 +475,7 @@ function sheet(o) {
       haptic("impact", "heavy");
       ok.disabled = true;
       const prev = ok.innerHTML;
-      ok.innerHTML = "در حال پردازش…";
+      ok.innerHTML = pxText("در حال پردازش…");
       try { await o.onOk(); }
       catch (e) { toast(e.message || String(e), "err"); ok.disabled = false; ok.innerHTML = prev; return; }
       ok.disabled = false; ok.innerHTML = prev;
@@ -510,8 +510,8 @@ function confirmSheet(title, body, onYes, opts) {
   sheet({
     title: title,
     body: note(h(body), opts.kind || "warn"),
-    foot: '<button class="btn btn-secondary flex-1" onclick="closeSheet()">لغو</button>' +
-      '<button class="btn ' + (opts.danger === false ? "btn-primary" : "btn-danger") + ' flex-1" id="sheetOk">' + h(opts.okText || "تأیید و اجرا") + '</button>',
+    foot: pxText('<button class="btn btn-secondary flex-1" onclick="closeSheet()">لغو</button>') +
+      '<button class="btn ' + (opts.danger === false ? "btn-primary" : "btn-danger") + ' flex-1" id="sheetOk">' + h(opts.okText || pxText("تأیید و اجرا")) + '</button>',
     onOk: async function () { closeSheet(); await onYes(); }
   });
 }
@@ -582,7 +582,7 @@ function formRead(fields, ns) {
     if (f.t === "switch") out[f.k] = !!el.checked;
     else if (f.t === "num") { const x = el.value.trim(); out[f.k] = x === "" ? null : Number(x); }
     else out[f.k] = el.value;
-    if (f.req && (out[f.k] === "" || out[f.k] === null || out[f.k] === undefined)) throw new Error((f.l || f.k) + " الزامی است");
+    if (f.req && (out[f.k] === "" || out[f.k] === null || out[f.k] === undefined)) throw new Error((f.l || f.k) + pxText(" الزامی است"));
   });
   return out;
 }
@@ -593,8 +593,8 @@ function editSheet(o) {
   sheet({
     title: o.title, sub: o.sub, cls: o.cls,
     body: (o.top || "") + formHtml(o.fields, ns) + (o.bottom || ""),
-    okText: o.okText || "ذخیره تغییرات",
-    cancelText: "انصراف",
+    okText: o.okText || pxText("ذخیره تغییرات"),
+    cancelText: pxText("انصراف"),
     onOk: async function () {
       const vals = formRead(o.fields, ns);
       await o.onSave(vals);
@@ -628,8 +628,8 @@ window.delEntity = function (label, path, opts) {
     else if (path.indexOf("/prompts") >= 0) opts.go = "prompts";
     else if (path.indexOf("/projects") >= 0) opts.go = "projects";
   }
-  confirmSheet("حذف " + label + "؟", opts.warn || "این عملیات غیرقابل بازگشت است.", async function () {
-    await doAct(function () { return api(path, { method: "DELETE" }); }, "با موفقیت حذف شد", { ...opts, bust: true, close: true });
+  confirmSheet(pxText("حذف ") + label + pxText("؟"), opts.warn || pxText("این عملیات غیرقابل بازگشت است."), async function () {
+    await doAct(function () { return api(path, { method: "DELETE" }); }, pxText("با موفقیت حذف شد"), { ...opts, bust: true, close: true });
   });
 };
 `;

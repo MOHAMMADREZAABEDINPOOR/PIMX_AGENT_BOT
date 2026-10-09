@@ -1,3 +1,4 @@
+import { pxText, pxTemplate } from '../i18n/server.js';
 // ─────────────────────────────────────────────
 // 🔐 Telegram Mini App authentication (initData HMAC verification)
 // شناسه کاربر هرگز از فرانتاند پذیرفته نمیشود — فقط از initData امضاشده
@@ -11,10 +12,10 @@ async function hmac(keyBytes, msg) {
 function hex(bytes) { return [...bytes].map(b => b.toString(16).padStart(2, "0")).join(""); }
 
 export async function verifyInitData(initData, botToken, { maxAgeSec = 86400 } = {}) {
-  if (!initData) return { ok: false, error: "initData موجود نیست" };
+  if (!initData) return { ok: false, error: pxText("initData موجود نیست") };
   const params = new URLSearchParams(initData);
   const hash = params.get("hash");
-  if (!hash) return { ok: false, error: "hash موجود نیست" };
+  if (!hash) return { ok: false, error: pxText("hash موجود نیست") };
   params.delete("hash");
   const dataCheckString = [...params.entries()]
     .map(([k, v]) => [k, v])
@@ -24,15 +25,15 @@ export async function verifyInitData(initData, botToken, { maxAgeSec = 86400 } =
 
   const secret = await hmac(new TextEncoder().encode("WebAppData"), botToken);
   const sig = await hmac(secret, dataCheckString);
-  if (hex(sig) !== hash) return { ok: false, error: "امضای initData نامعتبر است" };
+  if (hex(sig) !== hash) return { ok: false, error: pxText("امضای initData نامعتبر است") };
 
   const authDate = Number(params.get("auth_date") || 0);
   if (maxAgeSec && authDate && Date.now() / 1000 - authDate > maxAgeSec) {
-    return { ok: false, error: "initData منقضی شده — Mini App را دوباره باز کنید" };
+    return { ok: false, error: pxText("initData منقضی شده — Mini App را دوباره باز کنید") };
   }
   let user = null;
   try { user = JSON.parse(params.get("user") || "null"); } catch {}
-  if (!user?.id) return { ok: false, error: "کاربر در initData نیست" };
+  if (!user?.id) return { ok: false, error: pxText("کاربر در initData نیست") };
   return { ok: true, user, authDate, startParam: params.get("start_param") || null };
 }
 
@@ -68,7 +69,7 @@ export async function authenticate(request, env, botToken) {
   if (devToken && env.ADMIN_API_TOKEN && devToken === env.ADMIN_API_TOKEN) {
     return { ok: true, userId: Number(env.ADMIN_ID || 0), name: "admin", via: "adminToken" };
   }
-  return { ok: false, error: "احراز هویت لازم است", status: 401 };
+  return { ok: false, error: pxText("احراز هویت لازم است"), status: 401 };
 }
 
 // محدودیت نرخ API (KV-based، سبک)
