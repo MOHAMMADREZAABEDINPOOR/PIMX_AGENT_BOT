@@ -489,6 +489,10 @@ html[dir="rtl"] .msg.a .bub{border-bottom-left-radius:16px;border-bottom-right-r
 .tst{padding:10px 14px;border-radius:var(--r2);background:rgba(16,22,40,0.95);backdrop-filter:blur(20px);border:1px solid var(--glass-border);box-shadow:var(--sh2);display:flex;align-items:center;gap:8px;pointer-events:auto;font-size:13px;font-weight:650;animation:msgIn 0.25s ease;color:var(--text)}
 .tst.ok{border-color:rgba(16,185,129,0.4)}.tst.err{border-color:rgba(244,63,94,0.4)}.tst.warn{border-color:rgba(245,158,11,0.4)}
 .tst i{font-style:normal;font-weight:800}
+.toast-copy{flex:1;min-width:0;overflow-wrap:anywhere}
+.toast-close{display:grid;place-items:center;flex-shrink:0;width:32px;height:32px;margin-inline-start:auto;border:0;border-radius:8px;background:transparent;color:var(--text2);font:22px/1 sans-serif;cursor:pointer}
+.toast-close:hover{background:var(--acc-soft);color:var(--text)}
+.toast-close:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .tst.out{opacity:0;transform:translateY(-10px);transition:all 0.25s ease}
 .spin,.sp8{width:16px;height:16px;border:2px solid rgba(255,255,255,0.15);border-top-color:var(--acc);border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block}
 @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}

@@ -435,12 +435,13 @@ function toast(msg, kind) {
   el.style.cssText = "padding:10px 16px;box-shadow:var(--sh2);display:flex;align-items:center;gap:10px;pointer-events:auto;animation:msgIn 0.3s ease";
   const icon = kind === "ok" ? "✓" : kind === "bad" || kind === "err" ? "✕" : "ⓘ";
   const badgeCls = kind === "ok" ? "badge-ok" : kind === "bad" || kind === "err" ? "badge-bad" : "badge-info";
-  el.innerHTML = '<span class="badge ' + badgeCls + '">' + icon + '</span><span style="font-size:13px;font-weight:650">' + h(msg) + '</span>';
+  el.innerHTML = '<span class="badge ' + badgeCls + '">' + icon + '</span><span class="toast-copy" style="font-size:13px;font-weight:650">' + h(msg) + '</span><button type="button" class="toast-close" aria-label="' + h(pxText('بستن')) + '" title="' + h(pxText('بستن')) + '">×</button>';
   box.appendChild(el);
-  setTimeout(function () {
+  const timer = setTimeout(function () {
     el.style.opacity = "0"; el.style.transform = "translateY(-10px)"; el.style.transition = "all 0.25s ease";
     setTimeout(function () { el.remove(); }, 250);
   }, kind === "err" || kind === "bad" ? 4500 : 2500);
+  el.querySelector('.toast-close').onclick = function () { clearTimeout(timer); el.remove(); };
 }
 window.toast = toast;
 

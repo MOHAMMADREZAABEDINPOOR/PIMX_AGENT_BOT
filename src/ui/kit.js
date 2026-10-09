@@ -238,13 +238,14 @@ export const UI_KIT = String.raw`
     var el = document.createElement("div");
     el.className = "tst " + tone;
     var icon = tone === "ok" ? "✓" : tone === "err" ? "✕" : tone === "warn" ? "⚠" : "ⓘ";
-    el.innerHTML = "<i aria-hidden='true'>" + icon + "</i><span>" + h(msg) + "</span>";
+    el.innerHTML = "<i aria-hidden='true'>" + icon + "</i><span class='toast-copy'>" + h(msg) + "</span><button type='button' class='toast-close' aria-label='" + h(pxText('بستن')) + "' title='" + h(pxText('بستن')) + "'>×</button>";
     box.appendChild(el);
     var life = tone === "err" ? 4600 : 2600;
-    setTimeout(function () {
+    var timer = setTimeout(function () {
       el.classList.add("out");
       setTimeout(function () { el.remove(); }, 260);
     }, life);
+    el.querySelector('.toast-close').onclick = function () { clearTimeout(timer); el.remove(); };
     return el;
   }
   W.toast = toast; W.toastHost = toastHost;
