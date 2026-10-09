@@ -1,6 +1,6 @@
 export const APP_SHELL = String.raw`
 /* ═══════════ NAV STRUCTURE ═══════════ */
-const NAV = [
+function pxBuildNav() { return [
   { g: pxText("فضای من"), items: [
     { id: "home", i: "🏠", l: pxText("شروع") },
     { id: "chat", i: "💬", l: pxText("گفتگوها") },
@@ -35,17 +35,19 @@ const NAV = [
   { g: pxText("سیستم"), items: [
     { id: "settings", i: "⚙️", l: pxText("تنظیمات پلتفرم") }
   ]}
-];
+]; }
+let NAV = pxBuildNav();
 
-const TABS = [
+function pxBuildTabs() { return [
   { id: "home", i: "🏠", l: pxText("شروع") },
   { id: "chat", i: "💬", l: pxText("چت") },
   { id: "council", i: "🧠", l: pxText("شورا") },
   { id: "backup", i: "💾", l: pxText("پشتیبان") },
   { id: "__more", i: "☰", l: pxText("منو") }
-];
+]; }
+let TABS = pxBuildTabs();
 
-const TITLES = {
+function pxBuildTitles() { return {
   home: [pxText("فضای هوشمند تو"), pxText("ایده‌ها از همین‌جا شروع می‌شوند")],
   chat: [pxText("گفتگوها"), pxText("پاسخ زنده، با حافظهٔ شخصی تو")],
   backup: [pxText("پشتیبان و انتقال"), pxText("گفتگو و حافظه‌ات را همراهت ببر")],
@@ -74,6 +76,10 @@ const TITLES = {
   approvals: [pxText("تأییدیه‌های حساس"), pxText("کنترل اقدامات امنیتی")],
   settings: [pxText("تنظیمات پلتفرم"), pxText("سکرت‌ها، توکن‌ها و تم")],
   tenants: [pxText("سازمان‌ها و مستأجرین"), pxText("مدیریت دسترسی چندگانه")]
+}; }
+let TITLES = pxBuildTitles();
+window.pxRefreshNavigationLanguage = function() {
+  NAV = pxBuildNav(); TABS = pxBuildTabs(); TITLES = pxBuildTitles();
 };
 
 const PARENT = {
@@ -540,14 +546,20 @@ function setBootMsg(msg) {
   }
   setBootMsg(pxText("بارگذاری فضای شخصی…"));
   try {
-    const preferences = await api('/preferences');
+    const preferences = await api('/preferences', { timeout: 2000 });
+    S.cache.preferences = preferences;
     const chosen = preferences && preferences.language;
     const previousUser = localStorage.getItem('pimx_language_user');
     const desired = chosen === 'en' ? 'en' : 'fa';
     if (previousUser !== String(S.user.id) || chosen === 'en' || chosen === 'fa') {
       localStorage.setItem('pimx_language_user', String(S.user.id));
       localStorage.setItem('pimx_language', desired);
-      if (desired !== PX_LANGUAGE) { location.reload(); return; }
+      if (desired !== PX_LANGUAGE) {
+        PX_LANGUAGE = desired;
+        pxApplyLanguage();
+        pxRefreshNavigationLanguage();
+        setBootMsg(pxText('بارگذاری فضای شخصی…'));
+      }
     }
   } catch (e) { console.error('[language preferences]', e); }
   try {

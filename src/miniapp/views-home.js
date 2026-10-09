@@ -1,6 +1,6 @@
 export const VIEW_HOME = String.raw`
 async function viewHomeV2() {
-  const results = await Promise.allSettled([api('/dashboard'), convList(), cached('preferences', function () { return api('/preferences'); })]);
+  const results = await Promise.allSettled([api('/dashboard'), convList(), cached('preferences', function () { return api('/preferences', { timeout: 1500 }); })]);
   if (results[0].status === 'rejected') throw results[0].reason;
   const d = results[0].value, snap = d.snapshot || {};
   const convs = results[1].status === 'fulfilled' ? results[1].value : [];

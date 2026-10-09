@@ -42,10 +42,13 @@ export function miniAppHtml() {
 <meta name="color-scheme" content="dark light">
 <meta name="robots" content="noindex,nofollow">
 <title>PIMXAGENT</title>
+<script>
+try { if (localStorage.getItem('pimx_language') === 'en') { document.documentElement.lang = 'en'; document.documentElement.dir = 'ltr'; } } catch (_) {}
+</script>
 <link rel="preconnect" href="https://telegram.org">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>${CSS}</style>
 </head>
 <body>
@@ -59,6 +62,12 @@ export function miniAppHtml() {
     <div class="boot-bar"></div>
   </div>
 </div>
+<script>
+if (document.documentElement.lang === 'en') {
+  document.querySelector('.boot .px-kicker').textContent = 'Your AI workspace';
+  document.getElementById('bootMsg').textContent = 'Starting your AI workspace…';
+}
+</script>
 <script async src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
 (function(){
@@ -75,8 +84,8 @@ export function miniAppResponse(request) {
   const html = miniAppHtml();
   const headers = {
     "Content-Type": "text/html; charset=utf-8",
-    // Short private cache: instant re-open inside Telegram, still fresh after a deploy.
-    "Cache-Control": "private, max-age=60, stale-while-revalidate=600",
+    // Revalidate the HTML on opening; switching language stays in this document.
+    "Cache-Control": "private, no-cache, max-age=0, must-revalidate",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer"
   };

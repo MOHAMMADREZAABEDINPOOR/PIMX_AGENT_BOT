@@ -24,19 +24,43 @@ window.pxLanguage = function() { return PX_LANGUAGE; };
 pxApplyLanguage();
 document.querySelectorAll('.boot .px-kicker, #bootMsg').forEach(function(node) { node.textContent = pxText(node.textContent); });
 window.pxToggleLanguage = async function() {
+  if (window.pxLanguageSwitching) return;
+  window.pxLanguageSwitching = true;
   const button = document.getElementById('languageToggle');
   if (button) button.disabled = true;
+  const previous = PX_LANGUAGE;
   const next = PX_LANGUAGE === 'fa' ? 'en' : 'fa';
+  const draftInput = document.getElementById('cinput') || document.getElementById('homePrompt');
+  const draft = draftInput ? { id: draftInput.id, value: draftInput.value } : null;
+  function repaint(language) {
+    PX_LANGUAGE = language;
+    pxApplyLanguage();
+    pxRefreshNavigationLanguage();
+    document.getElementById('app').innerHTML = shell(loading());
+    document.getElementById('languageToggle').disabled = true;
+  }
+  repaint(next);
   try {
-    await api('/preferences', { method: 'PATCH', body: { language: next } });
-    const draft = document.getElementById('cinput') || document.getElementById('homePrompt');
-    if (draft && draft.value) sessionStorage.setItem('pimx_language_draft', JSON.stringify({ userId: S.user.id, id: draft.id, value: draft.value }));
-    localStorage.setItem('pimx_language', next);
-    localStorage.setItem('pimx_language_user', String(S.user.id));
-    location.reload();
+    const preferences = await api('/preferences', { method: 'PATCH', body: { language: next }, timeout: 5000 });
+    try {
+      localStorage.setItem('pimx_language', next);
+      localStorage.setItem('pimx_language_user', String(S.user.id));
+    } catch (_) {}
+    S.meta = await api('/meta', { timeout: 1500 }).catch(function() { return S.meta; });
+    bust();
+    S.cache.preferences = preferences;
+    S.preferences = preferences;
+    await render();
   } catch (error) {
+    repaint(previous);
+    await render();
     toast(error.message, 'bad');
-    if (button) button.disabled = false;
+  } finally {
+    const input = draft && document.getElementById(draft.id);
+    if (input) input.value = draft.value;
+    const currentButton = document.getElementById('languageToggle');
+    if (currentButton) currentButton.disabled = false;
+    window.pxLanguageSwitching = false;
   }
 };
 window.pxRestoreLanguageDraft = function() {

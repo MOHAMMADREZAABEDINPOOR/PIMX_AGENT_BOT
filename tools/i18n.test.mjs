@@ -6,6 +6,48 @@ import { translateLiteral, renderTemplate } from '../src/i18n/shared.js';
 import { generateCacheKey } from '../src/gateway/cache.js';
 import { withLanguage } from '../src/i18n/server.js';
 
+test('Slow fonts do not block startup and language switching never reloads or reauthenticates', { timeout: 20000 }, async () => {
+  const preview = await startPreview();
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+  const heldFonts = [];
+  let authRequests = 0;
+  let releaseSave;
+  const saveGate = new Promise(resolve => { releaseSave = resolve; });
+  await page.route('https://fonts.googleapis.com/**', route => { heldFonts.push(route); });
+  await page.route('**/api/preferences', async route => {
+    if (route.request().method() === 'PATCH') await saveGate;
+    await route.continue();
+  });
+  page.on('request', request => { if (request.url().endsWith('/api/auth')) authRequests++; });
+  try {
+    await page.goto(preview.url + '/app', { waitUntil: 'domcontentloaded' });
+    await page.locator('.studio-home').waitFor({ timeout: 4000 });
+    await page.evaluate(() => { window.fixturePageIdentity = 'same-page'; });
+    const authBefore = authRequests;
+    await page.locator('#languageToggle').click();
+    await page.waitForFunction(() => document.documentElement.lang === 'en', null, { timeout: 1000 });
+    assert.equal(await page.evaluate(() => window.fixturePageIdentity), 'same-page');
+    assert.equal(authRequests, authBefore);
+    assert.equal(await page.locator('.boot').count(), 0, 'switching must not restart the boot screen');
+    assert.ok(!/[\u0600-\u06ff]/.test(await page.locator('#view').innerText()), 'pending switch must show English loading content');
+    releaseSave();
+    await page.waitForFunction(() => !window.pxLanguageSwitching);
+    await page.locator('.studio-home').waitFor({ timeout: 4000 });
+    assert.equal(await page.evaluate(() => window.fixturePageIdentity), 'same-page');
+    assert.equal(authRequests, authBefore);
+    // Even before the full application script arrives, the initial loader is English.
+    await page.route('**/api/auth', route => {});
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    assert.equal(await page.locator('html').getAttribute('lang'), 'en');
+    assert.ok(!/[\u0600-\u06ff]/.test(await page.locator('#bootMsg').innerText()));
+  } finally {
+    releaseSave();
+    await Promise.all(heldFonts.map(route => route.abort().catch(() => {})));
+    await browser.close(); await preview.close();
+  }
+});
+
 test('Translation preserves interpolated content, HTML actions and language-specific cache entries', () => {
   assert.equal(renderTemplate('en', ['مدل ', ''], ['مدل خصوصی فارسی']), 'model مدل خصوصی فارسی');
   assert.equal(translateLiteral('بازگشت', 'fa'), 'بازگشت');
@@ -27,6 +69,7 @@ test('Mini App switches and persists language across routes, themes and accounts
     await page.locator('#homePrompt').fill('پیش‌نویس شخصی');
     await page.locator('#languageToggle').click();
     await page.waitForFunction(() => document.documentElement.lang === 'en' && S.ready);
+    await page.waitForFunction(() => !window.pxLanguageSwitching);
     await page.locator('.studio-home').waitFor();
     assert.equal(await page.locator('#homePrompt').inputValue(), 'پیش‌نویس شخصی');
     assert.equal(await page.locator('html').getAttribute('dir'), 'ltr');
@@ -63,6 +106,7 @@ test('Mini App switches and persists language across routes, themes and accounts
     assert.equal(await page.locator('html').getAttribute('lang'), 'en', 'account language must be restored');
     await page.locator('#languageToggle').click();
     await page.waitForFunction(() => document.documentElement.lang === 'fa' && S.ready);
+    await page.waitForFunction(() => !window.pxLanguageSwitching);
     assert.equal(await page.locator('html').getAttribute('dir'), 'rtl');
     assert.deepEqual(errors, []);
   } finally { await browser.close(); await preview.close(); }
