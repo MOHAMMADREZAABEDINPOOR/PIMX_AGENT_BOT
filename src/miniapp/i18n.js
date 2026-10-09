@@ -1,9 +1,32 @@
-import { ENGLISH, PHRASE_PATTERN, translateLiteral } from '../i18n/shared.js';
+import { ENGLISH, PHRASE_PATTERN } from '../i18n/shared.js';
+
+// Browser source must remain literal text. Function.toString() includes renamed
+// module variables and Wrangler's __name helper after bundling.
+const BROWSER_TRANSLATOR = String.raw`
+function translateLiteral(value, language) {
+  if (language !== 'en') return String(value);
+  const source = String(value);
+  return source.replace(new RegExp(PHRASE_PATTERN, 'g'), function(phrase, offset) {
+    const key = phrase.trimEnd();
+    let translated = english[key] === undefined ? key : english[key];
+    const prefix = source.slice(0, offset);
+    const tagStart = prefix.lastIndexOf('<');
+    if (tagStart > prefix.lastIndexOf('>')) {
+      const attribute = /([\w-]+)\s*=\s*"[^"]*$/.exec(prefix.slice(tagStart));
+      if (attribute) {
+        if (/^on/i.test(attribute[1])) translated = translated.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        translated = translated.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+    }
+    return translated + phrase.slice(key.length);
+  });
+}
+`;
 
 export const APP_I18N = `
 const english = ${JSON.stringify(ENGLISH).replace(/</g, '\\u003c')};
 const PHRASE_PATTERN = ${JSON.stringify(PHRASE_PATTERN)};
-${translateLiteral.toString()}
+${BROWSER_TRANSLATOR}
 let PX_LANGUAGE = 'fa';
 try { PX_LANGUAGE = localStorage.getItem('pimx_language') === 'en' ? 'en' : 'fa'; } catch (_) {}
 function pxText(value) {

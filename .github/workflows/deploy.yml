@@ -28,8 +28,8 @@ jobs:
       - run: npm test
       - run: npx playwright install --with-deps chromium
       - run: npm run test:ui
-      - name: Build Worker
-        run: npm run deploy -- --dry-run
+      - name: Test production Worker bundle
+        run: npm run test:build
         env:
           WRANGLER_SEND_METRICS: 'false'
 

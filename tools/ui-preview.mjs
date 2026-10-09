@@ -19,7 +19,7 @@ export async function fixtureInitData(id = 11) {
   return params.toString();
 }
 
-export async function startPreview(port = 0) {
+export async function startPreview(port = 0, { appHtml = miniAppHtml } = {}) {
   const env = modelEnv();
   const put = async (key, value) => env.BOT_KV.put(key, JSON.stringify(value));
   await put('pf:profile:11', { firstName: 'سارا', lastName: 'پیمکس' });
@@ -67,7 +67,7 @@ export async function startPreview(port = 0) {
         const userId = Number(url.searchParams.get('user') || 11);
         const sdk = url.searchParams.has('anonymous') ? '' : `<script>window.Telegram={WebApp:{initData:${JSON.stringify(await fixtureInitData(userId))},colorScheme:'dark',ready:function(){},expand:function(){},setHeaderColor:function(){},setBackgroundColor:function(){},onEvent:function(){},HapticFeedback:{impactOccurred:function(){},notificationOccurred:function(){},selectionChanged:function(){}}}};</script>`;
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(miniAppHtml().replace('<script async src="https://telegram.org/js/telegram-web-app.js"></script>', sdk)); return;
+        res.end((await appHtml()).replace('<script async src="https://telegram.org/js/telegram-web-app.js"></script>', sdk)); return;
       }
       if (url.pathname.startsWith('/api/')) {
         const chunks = []; for await (const chunk of req) chunks.push(chunk);
