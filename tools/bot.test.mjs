@@ -89,3 +89,100 @@ test('Telegram webhook rejects unsigned updates and emits native styled start an
     assert.ok(messages.find(m => m.method === 'setMyCommands').body.commands.some(c => c.command === 'restore'));
   } finally { globalThis.fetch = originalFetch; }
 });
+
+test('Models catalog displays all models with categories, pagination, chat button and complete menu', async () => {
+  const env = { BOT_KV: new MemoryKV(), BOT_TOKEN: 'fixture-only-token', ADMIN_ID: '11' };
+  const originalFetch = globalThis.fetch;
+  const messages = [];
+  globalThis.fetch = async (url, options) => {
+    const body = options.body instanceof FormData ? Object.fromEntries(options.body.entries()) : JSON.parse(options.body || '{}');
+    messages.push({ method: String(url).split('/').at(-1), body });
+    return Response.json({ ok: true, result: { message_id: messages.length } });
+  };
+  const signature = [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('pimx-webhook:' + env.BOT_TOKEN)))].map(b => b.toString(16).padStart(2, '0')).join('');
+  const call = async (text, userId = 11) => {
+    const pending = [];
+    const response = await worker.fetch(new Request('https://fixture.invalid/webhook', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Telegram-Bot-Api-Secret-Token': signature },
+      body: JSON.stringify({ update_id: messages.length + 1, message: { message_id: messages.length + 1, from: { id: userId, first_name: 'Tester' }, chat: { id: userId, type: 'private' }, text } })
+    }), env, { waitUntil: p => pending.push(p) });
+    await Promise.all(pending);
+    return response;
+  };
+  const click = async (data, userId = 11) => {
+    const pending = [];
+    const response = await worker.fetch(new Request('https://fixture.invalid/webhook', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Telegram-Bot-Api-Secret-Token': signature },
+      body: JSON.stringify({ callback_query: { id: 'cq-' + messages.length, from: { id: userId }, message: { message_id: 1, chat: { id: userId, type: 'private' } }, data } })
+    }), env, { waitUntil: p => pending.push(p) });
+    await Promise.all(pending);
+    return response;
+  };
+
+  try {
+    // 1. Open /models
+    await call('/models', 11);
+    const mMsg = messages.at(-1);
+    assert.equal(mMsg.method, 'sendMessage');
+    assert.ok(mMsg.body.text.includes('کتابخانه و انتخاب مدل‌های هوش مصنوعی'));
+    const buttons = mMsg.body.reply_markup.inline_keyboard.flat();
+
+    // Verify category filter buttons exist
+    assert.ok(buttons.some(b => b.callback_data === 'models:c:chat:1'), 'chat category button must exist');
+    assert.ok(buttons.some(b => b.callback_data === 'models:c:coding:1'), 'coding category button must exist');
+    assert.ok(buttons.some(b => b.callback_data === 'models:c:reasoning:1'), 'reasoning category button must exist');
+    assert.ok(buttons.some(b => b.callback_data === 'models:c:vision:1'), 'vision category button must exist');
+    assert.ok(buttons.some(b => b.callback_data === 'models:c:fast:1'), 'fast category button must exist');
+    assert.ok(buttons.some(b => b.callback_data === 'models:c:all:1'), 'all category button must exist');
+
+    // Verify action buttons exist in models menu
+    assert.ok(buttons.some(b => b.callback_data === 'mode:chat'), 'start chat button must exist in models menu');
+    assert.ok(buttons.some(b => b.callback_data === 'setmodel:auto'), 'auto model button must exist');
+    assert.ok(buttons.some(b => b.callback_data === 'testmodels'), 'test models button must exist');
+    assert.ok(buttons.some(b => b.callback_data === 'pf:providers'), 'providers button must exist');
+    assert.ok(buttons.some(b => b.callback_data === 'menu'), 'main menu button must exist');
+
+    // 2. Filter to Coding category
+    await click('models:c:coding:1', 11);
+    const codeMsg = messages.at(-1);
+    assert.ok(codeMsg.body.text.includes('برنامه‌نویسی'));
+    const codeBtns = codeMsg.body.reply_markup.inline_keyboard.flat();
+    assert.ok(codeBtns.some(b => b.callback_data === 'setmodel:codestral-latest'));
+
+    // 3. Paginate to page 2 of all models
+    await click('models:p:all:2', 11);
+    const p2Msg = messages.at(-1);
+    assert.ok(p2Msg.body.text.includes('صفحه 2'));
+
+    // 4. Select a specific model
+    await click('setmodel:meta/llama-3.3-70b-instruct', 11);
+    const selectMsg = messages.at(-1);
+    assert.ok(selectMsg.body.text.includes('مدل با موفقیت انتخاب شد'));
+    assert.ok(selectMsg.body.text.includes('Llama 3.3 70B'));
+    const selBtns = selectMsg.body.reply_markup.inline_keyboard.flat();
+    assert.ok(selBtns.some(b => b.callback_data === 'mode:chat'), 'direct chat button must be available after model selection');
+    assert.ok(selBtns.some(b => b.callback_data === 'models'), 'return to models list must be available');
+    assert.ok(selBtns.some(b => b.callback_data === 'menu'), 'menu button must be available');
+
+    // 5. Enter Chat mode directly
+    await click('mode:chat', 11);
+    const chatMsg = messages.at(-1);
+    assert.ok(chatMsg.body.text.includes('چت هوشمند فعال شد'));
+    assert.ok(chatMsg.body.text.includes('Llama 3.3 70B'), 'active model must be shown in chat activation');
+    const chatBtns = chatMsg.body.reply_markup.inline_keyboard.flat();
+    assert.ok(chatBtns.some(b => b.callback_data === 'models'), 'change model button must be available in chat');
+
+    // 6. Main menu contains chatmgmt and help
+    await call('/menu', 11);
+    const menuMsg = messages.at(-1);
+    const menuBtns = menuMsg.body.reply_markup.inline_keyboard.flat();
+    assert.ok(menuBtns.some(b => b.callback_data === 'chatmgmt'), 'chat management must be in main menu');
+    assert.ok(menuBtns.some(b => b.callback_data === 'help'), 'help button must be in main menu');
+    assert.ok(menuBtns.some(b => b.callback_data === 'models'), 'models button must be in main menu');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+

@@ -1590,7 +1590,8 @@ function mainMenuKb(userId = null) {
     [{ text: pxText("🤝 ایجنت‌ها"), callback_data: "pf:agents" }, { text: pxText("📚 دانش من"), callback_data: "kb" }],
     [{ text: pxText("🛠 جعبه‌ابزار"), callback_data: "tools" }, { text: pxText("⚡ اتوماسیون"), callback_data: "pf:tasks" }],
     [{ text: pxText("📊 مصرف و وضعیت"), callback_data: "usage" }, { text: pxText("⚙️ تنظیمات"), callback_data: "settings" }],
-    [{ text: pxText("🪄 حالت‌های تخصصی"), callback_data: "modes" }, { text: pxText("🏗 مرکز زیرساخت"), callback_data: "pf:menu" }]
+    [{ text: pxText("🪄 حالت‌های تخصصی"), callback_data: "modes" }, { text: pxText("🏗 مرکز زیرساخت"), callback_data: "pf:menu" }],
+    [{ text: pxText("🗂 مدیریت چت و تاریخچه"), callback_data: "chatmgmt" }, { text: pxText("📖 راهنما"), callback_data: "help" }]
   ];
   if (Number(userId) === Number(ADMIN_ID) && ADMIN_ID) rows.push([{ text: pxText("🗄 دانلود کل دیتابیس"), callback_data: "backup:database", style: "success" }]);
   if (MINIAPP_URL) {
@@ -1633,18 +1634,132 @@ function chatMgmtKb() {
   ));
 }
 
-function modelsKb(current) {
-  const rows = [[{ text: pxTemplate`${current === "auto" ? "✅ " : ""}🤖 خودکار (هوشمند)`, callback_data: "setmodel:auto" }]];
-  const nvidiaModels = [...new Set(Object.values(MODEL_CATEGORIES).flat())];
-  for (const m of nvidiaModels) {
-    const short = m.split("/").pop();
-    rows.push([{ text: `${current === m ? "✅ " : "🟩 "}${short}`, callback_data: `setmodel:${m}`.slice(0, 64) }]);
+const ALL_CATALOG_MODELS = [
+  // 🔷 Google Gemini
+  { id: "gemini-flash-latest", name: "Gemini Flash", provider: "google", badge: "🔷", cats: ["chat", "vision", "fast", "gemini"] },
+  { id: "gemini-flash-lite-latest", name: "Gemini Lite", provider: "google", badge: "🔷", cats: ["chat", "fast", "gemini"] },
+
+  // 🟩 NVIDIA NIM
+  { id: "meta/llama-3.3-70b-instruct", name: "Llama 3.3 70B", provider: "nvidia", badge: "🟩", cats: ["chat", "coding"] },
+  { id: "meta/llama-3.1-70b-instruct", name: "Llama 3.1 70B", provider: "nvidia", badge: "🟩", cats: ["chat"] },
+  { id: "meta/llama-3.1-8b-instruct", name: "Llama 3.1 8B", provider: "nvidia", badge: "🟩", cats: ["fast"] },
+  { id: "nvidia/llama-3.3-nemotron-super-49b-v1", name: "Nemotron 49B", provider: "nvidia", badge: "🟩", cats: ["reasoning", "coding"] },
+  { id: "meta/llama-3.2-11b-vision-instruct", name: "Llama 3.2 Vision", provider: "nvidia", badge: "🟩", cats: ["vision"] },
+  { id: "mistralai/mixtral-8x7b-instruct-v0.1", name: "Mixtral 8x7B", provider: "nvidia", badge: "🟩", cats: ["chat"] },
+  { id: "qwen/qwen2.5-coder-32b-instruct", name: "Qwen 2.5 Coder", provider: "nvidia", badge: "🟩", cats: ["coding"] },
+
+  // 🟪 OpenRouter (Free)
+  { id: "nvidia/nemotron-3-ultra-550b-a55b:free", name: "Nemotron 550B", provider: "openrouter", badge: "🟪", cats: ["reasoning"] },
+  { id: "nvidia/nemotron-3-super-120b-a12b:free", name: "Nemotron 120B", provider: "openrouter", badge: "🟪", cats: ["chat", "reasoning"] },
+  { id: "openai/gpt-oss-20b:free", name: "GPT-OSS 20B", provider: "openrouter", badge: "🟪", cats: ["chat", "reasoning"] },
+  { id: "google/gemma-4-26b-a4b-it:free", name: "Gemma 4 26B", provider: "openrouter", badge: "🟪", cats: ["vision"] },
+  { id: "poolside/laguna-m.1:free", name: "Laguna M.1", provider: "openrouter", badge: "🟪", cats: ["chat"] },
+  { id: "poolside/laguna-xs-2.1:free", name: "Laguna XS", provider: "openrouter", badge: "🟪", cats: ["fast"] },
+  { id: "cohere/north-mini-code:free", name: "North Mini Code", provider: "openrouter", badge: "🟪", cats: ["coding"] },
+  { id: "nvidia/nemotron-3-nano-30b-a3b:free", name: "Nemotron 30B", provider: "openrouter", badge: "🟪", cats: ["fast"] },
+  { id: "nvidia/nemotron-nano-9b-v2:free", name: "Nemotron 9B", provider: "openrouter", badge: "🟪", cats: ["fast"] },
+  { id: "nvidia/nemotron-3.5-content-safety:free", name: "Nemotron Safety", provider: "openrouter", badge: "🟪", cats: ["chat"] },
+
+  // 🟧 Mistral AI
+  { id: "mistral-large-latest", name: "Mistral Large", provider: "mistral", badge: "🟧", cats: ["chat", "vision", "reasoning"] },
+  { id: "mistral-medium-latest", name: "Mistral Medium", provider: "mistral", badge: "🟧", cats: ["chat"] },
+  { id: "codestral-latest", name: "Codestral", provider: "mistral", badge: "🟧", cats: ["coding"] }
+];
+
+function getCatalogModels(category = "all") {
+  if (category === "all") return ALL_CATALOG_MODELS;
+  return ALL_CATALOG_MODELS.filter(m => m.cats.includes(category));
+}
+
+function modelsView(current, category = "all", page = 1) {
+  const models = getCatalogModels(category);
+  const total = models.length;
+  const pageSize = 8;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const curPage = Math.max(1, Math.min(page, totalPages));
+
+  const curModelObj = ALL_CATALOG_MODELS.find(m => m.id === current);
+  const curModelLabel = current === "auto"
+    ? pxText("🤖 خودکار (هوشمند)")
+    : (curModelObj ? `${curModelObj.badge} ${curModelObj.name}` : escapeHtml(current));
+
+  const catLabels = {
+    all: pxText("🌐 همه مدل‌ها"),
+    chat: pxText("💬 گفتگوی متنی (چت)"),
+    coding: pxText("💻 برنامه‌نویسی و کد"),
+    reasoning: pxText("🧠 استدلال و تفکر"),
+    vision: pxText("🖼 بینایی و تصویر"),
+    fast: pxText("⚡ سریع و سبک")
+  };
+
+  const text = pxTemplate`🎛 <b>کتابخانه و انتخاب مدل‌های هوش مصنوعی</b>\n\n` +
+    pxTemplate`📌 <b>مدل انتخابی:</b> <code>${curModelLabel}</code>\n` +
+    pxTemplate`📁 <b>دسته:</b> <b>${catLabels[category] || category}</b>\n` +
+    pxTemplate`📊 <b>تعداد مدل‌ها:</b> ${total} مدل (صفحه ${curPage} از ${totalPages})\n\n` +
+    pxTemplate`▫️ <i>برای تغییر مدل، روی دکمهٔ مدل مورد نظر بزنید.</i>\n` +
+    pxTemplate`▫️ <i>برای شروع گفتگو با مدل انتخابی، «💬 شروع چت با مدل» را لمس کنید.</i>`;
+
+  const kbRows = [];
+
+  // ۱. فیلتر دسته‌بندی
+  kbRows.push([
+    { text: category === "chat" ? "🔘 💬 چت" : "💬 چت", callback_data: "models:c:chat:1" },
+    { text: category === "coding" ? "🔘 💻 کد" : "💻 کد", callback_data: "models:c:coding:1" },
+    { text: category === "reasoning" ? "🔘 🧠 استدلال" : "🧠 استدلال", callback_data: "models:c:reasoning:1" }
+  ]);
+  kbRows.push([
+    { text: category === "vision" ? "🔘 🖼 بینایی" : "🖼 بینایی", callback_data: "models:c:vision:1" },
+    { text: category === "fast" ? "🔘 ⚡ سریع" : "⚡ سریع", callback_data: "models:c:fast:1" },
+    { text: category === "all" ? "🔘 🌐 همه" : "🌐 همه", callback_data: "models:c:all:1" }
+  ]);
+
+  // ۲. نمایش مدل‌های صفحه (شبکه ۲ ستونه)
+  const start = (curPage - 1) * pageSize;
+  const pageModels = models.slice(start, start + pageSize);
+  const modelBtns = pageModels.map(m => {
+    const isCur = current === m.id;
+    return {
+      text: `${isCur ? "✅ " : m.badge + " "}${m.name}`,
+      callback_data: `setmodel:${m.id}`.slice(0, 64)
+    };
+  });
+  for (let i = 0; i < modelBtns.length; i += 2) {
+    kbRows.push(modelBtns.slice(i, i + 2));
   }
-  for (const g of GEMINI_MODELS) {
-    rows.push([{ text: `${current === g ? "✅ " : "🔷 "}${g}`, callback_data: `setmodel:${g}` }]);
+
+  // ۳. ناوبری و صفحه‌بندی
+  if (totalPages > 1) {
+    const navRow = [];
+    if (curPage > 1) {
+      navRow.push({ text: "◀️ قبلی", callback_data: `models:p:${category}:${curPage - 1}` });
+    }
+    navRow.push({ text: `📄 ${curPage} / ${totalPages}`, callback_data: `models:c:${category}:${curPage}` });
+    if (curPage < totalPages) {
+      navRow.push({ text: "بعدی ▶️", callback_data: `models:p:${category}:${curPage + 1}` });
+    }
+    kbRows.push(navRow);
   }
-  rows.push([{ text: pxText("🔙 منو"), callback_data: "menu" }]);
-  return inlineKb(rows);
+
+  // ۴. دکمه‌های اقدام اصلی (چت مدل و خودکار)
+  kbRows.push([
+    { text: pxText("💬 شروع چت با مدل"), callback_data: "mode:chat", style: "primary" },
+    { text: `${current === "auto" ? "✅ " : ""}🤖 خودکار (هوشمند)`, callback_data: "setmodel:auto" }
+  ]);
+
+  // ۵. ابزارها و منوی اصلی
+  kbRows.push([
+    { text: pxText("🔄 تست سلامت مدل‌ها"), callback_data: "testmodels" },
+    { text: pxText("🔌 پروایدرها"), callback_data: "pf:providers" }
+  ]);
+  kbRows.push([
+    { text: pxText("📋 منوی اصلی"), callback_data: "menu" }
+  ]);
+
+  return { text, keyboard: inlineKb(kbRows) };
+}
+
+function modelsKb(current, category = "all", page = 1) {
+  return modelsView(current, category, page).keyboard;
 }
 
 function settingsKb() {
@@ -1708,10 +1823,14 @@ const REPLY_KB_ACTIONS = {
   // سازگاری با دکمههای قدیمی
   "منو": "menu",
   "چت": "mode_chat",
+  "چت مدل": "mode_chat",
+  "مدل": "models",
+  "مدل ها": "models",
+  "مدلها": "models",
+  "انتخاب مدل": "models",
   "جستجوی وب": "mode_websearch",
   "تحقیق": "mode_research",
   "خلاصه": "mode_summarize",
-  "مدلها": "models",
   "مصرف": "usage",
   "تنظیمات": "settings"
 };
@@ -2683,7 +2802,17 @@ async function handleLocalizedCallback(env, cq) {
     if (!info) return;
     if (mode === "chat") {
       await delDb(env, `user:${userId}:mode`);
-      return editOrSend(chatId, pxText("💬 <b>چت هوشمند فعال شد!</b>\n\nهر پیامی بفرستید تا هوش مصنوعی پاسخ دهد."), backKb(), cq.message);
+      const s = await getUserSettings(env, userId);
+      const curModelObj = ALL_CATALOG_MODELS.find(m => m.id === s.model);
+      const modelName = s.model === "auto" ? "🤖 خودکار (هوشمند)" : (curModelObj ? `${curModelObj.badge} ${curModelObj.name}` : s.model);
+      return editOrSend(chatId,
+        pxTemplate`💬 <b>چت هوشمند فعال شد!</b>\n\n` +
+        pxTemplate`📌 <b>مدل فعال:</b> <code>${modelName}</code>\n\n` +
+        pxText("هر پیامی بفرستید، هوش مصنوعی بلافاصله با این مدل پاسخ می‌دهد."),
+        inlineKb([
+          [{ text: pxText("🎛 تغییر مدل"), callback_data: "models" }, { text: pxText("🔄 چت جدید"), callback_data: "newchat" }],
+          [{ text: pxText("📋 منوی اصلی"), callback_data: "menu" }]
+        ]), cq.message);
     }
     // حالت چسبان: تا وقتی کاربر خارج نشود، همه پیام‌ها با این حالت پردازش می‌شوند
     await putDb(env, `user:${userId}:mode`, mode);
@@ -2696,19 +2825,56 @@ async function handleLocalizedCallback(env, cq) {
   if (data === "tools") { await ack(); return editOrSend(chatId, pxText("🧰 <b>جعبه‌ابزار</b>\n\n👇 ابزار مورد نظر را انتخاب کنید:"), toolsKb(), cq.message); }
   if (data === "chatmgmt") { await ack(); return editOrSend(chatId, pxText("🗂 <b>مدیریت چت</b>\n\n👇 انتخاب کنید:"), chatMgmtKb(), cq.message); }
 
-  if (data === "models") {
+  if (data === "testmodels") {
+    await ack(pxText("در حال بررسی وضعیت مدل‌ها…"));
+    const results = await runModelSweep();
+    const okList = results.filter(r => r.ok);
+    const badList = results.filter(r => !r.ok);
+    let msg = pxTemplate`🔬 <b>نتیجه بررسی وضعیت مدل‌ها:</b>\n\n` +
+      pxTemplate`🟢 <b>مدل‌های سالم و آماده (${okList.length}):</b>\n` +
+      okList.map(r => `• <code>${escapeHtml(r.model.split("/").pop())}</code> (${r.ms}ms)`).join("\n");
+    if (badList.length) {
+      msg += pxTemplate`\n\n🔴 <b>غیرفعال یا خطا (${badList.length}):</b>\n` +
+        badList.map(r => `• <code>${escapeHtml(r.model.split("/").pop())}</code>`).join("\n");
+    }
+    return editOrSend(chatId, msg, inlineKb([
+      [{ text: pxText("🎛 بازگشت به لیست مدل‌ها"), callback_data: "models" }],
+      [{ text: pxText("💬 شروع چت"), callback_data: "mode:chat" }, { text: pxText("📋 منوی اصلی"), callback_data: "menu" }]
+    ]), cq.message);
+  }
+
+  if (data === "models" || data.startsWith("models:")) {
     await ack();
+    let cat = "all";
+    let p = 1;
+    if (data.startsWith("models:c:") || data.startsWith("models:p:")) {
+      const parts = data.split(":");
+      cat = parts[2] || "all";
+      p = parseInt(parts[3], 10) || 1;
+    }
     const s = await getUserSettings(env, userId);
-    return sendMessage(chatId,
-      pxTemplate`🤖 <b>انتخاب مدل هوش مصنوعی</b>\n\nمدل فعلی: <b>${escapeHtml(s.model)}</b>\n\n` +
-      pxTemplate`🟩 = NVIDIA (رایگان) · 🔷 = Gemini\n` +
-      pxTemplate`💡 <i>اگر مدل انتخابی خطا بدهد، خودکار به مدل سالم بعدی سوئیچ می‌شود.</i>`, modelsKb(s.model));
+    const view = modelsView(s.model, cat, p);
+    return editOrSend(chatId, view.text, view.keyboard, cq.message);
   }
   if (data.startsWith("setmodel:")) {
     const m = data.slice(9);
     await saveUserSettings(env, userId, { model: m });
-    await ack(pxTemplate`✅ مدل: ${m === "auto" ? pxText("خودکار") : m.split("/").pop()}`);
-    return sendMessage(chatId, pxTemplate`✅ مدل فعال: <b>${escapeHtml(m)}</b>`, backKb());
+    const targetObj = ALL_CATALOG_MODELS.find(x => x.id === m);
+    const short = m === "auto" ? pxText("خودکار") : (targetObj ? targetObj.name : m.split("/").pop());
+    await ack(pxTemplate`✅ مدل فعال شد: ${short}`);
+
+    const provName = m === "auto" ? pxText("مسیریابی هوشمند پلتفرم") : (targetObj ? targetObj.provider.toUpperCase() : providerOf(m).toUpperCase());
+    const confirmText = pxTemplate`🎛 <b>مدل با موفقیت انتخاب شد!</b>\n\n` +
+      pxTemplate`📌 <b>مدل فعال:</b> <code>${m === "auto" ? "🤖 خودکار (هوشمند)" : (targetObj ? `${targetObj.badge} ${targetObj.name}` : escapeHtml(m))}</code>\n` +
+      pxTemplate`🏢 <b>پروایدر:</b> <b>${escapeHtml(provName)}</b>\n\n` +
+      pxTemplate`👇 اکنون می‌توانید مستقیماً گفتگو را آغاز کنید یا تنظیمات دیگر را تغییر دهید:`;
+
+    const confirmKb = inlineKb([
+      [{ text: pxText("💬 شروع چت با این مدل"), callback_data: "mode:chat", style: "primary" }],
+      [{ text: pxText("🎛 بازگشت به لیست مدل‌ها"), callback_data: "models" }, { text: pxText("📋 منوی اصلی"), callback_data: "menu" }]
+    ]);
+
+    return editOrSend(chatId, confirmText, confirmKb, cq.message);
   }
 
   if (data.startsWith("tool:")) {
@@ -3683,18 +3849,24 @@ async function handleCommand(env, chatId, userId, text) {
 
     case "/model": {
       if (!args) return sendMessage(chatId, pxTemplate`🤖 مدل فعلی: <b>${escapeHtml(settings.model)}</b>\n\nتغییر: <code>/model auto</code> یا <code>/model meta/llama-3.3-70b-instruct</code>\nلیست: /models`);
-      const all = [...new Set(Object.values(MODEL_CATEGORIES).flat()), ...GEMINI_MODELS, "auto"];
+      const all = ["auto", ...ALL_CATALOG_MODELS.map(m => m.id)];
       const match = all.find(m => m === args || m.endsWith("/" + args) || m.includes(args));
       if (!match) return sendMessage(chatId, pxTemplate`⚠️ مدل <code>${escapeHtml(args)}</code> یافت نشد. /models را ببینید.`);
       await saveUserSettings(env, userId, { model: match });
-      return sendMessage(chatId, pxTemplate`✅ مدل فعال: <b>${escapeHtml(match)}</b>\n\n<i>بازگشت به حالت هوشمند: /model auto</i>`, backKb());
+      const targetObj = ALL_CATALOG_MODELS.find(x => x.id === match);
+      const provName = match === "auto" ? pxText("مسیریابی هوشمند پلتفرم") : (targetObj ? targetObj.provider.toUpperCase() : providerOf(match).toUpperCase());
+      const confirmText = pxTemplate`✅ <b>مدل فعال:</b> <code>${match === "auto" ? "🤖 خودکار (هوشمند)" : (targetObj ? `${targetObj.badge} ${targetObj.name}` : escapeHtml(match))}</code>\n` +
+        pxTemplate`🏢 <b>پروایدر:</b> <b>${escapeHtml(provName)}</b>\n\n` +
+        pxTemplate`<i>بازگشت به حالت هوشمند: /model auto</i>`;
+      const confirmKb = inlineKb([
+        [{ text: pxText("💬 شروع چت با این مدل"), callback_data: "mode:chat", style: "primary" }],
+        [{ text: pxText("🎛 بازگشت به لیست مدل‌ها"), callback_data: "models" }, { text: pxText("📋 منوی اصلی"), callback_data: "menu" }]
+      ]);
+      return sendMessage(chatId, confirmText, confirmKb);
     }
     case "/models": {
-      return sendMessage(chatId,
-        pxTemplate`🤖 <b>انتخاب مدل هوش مصنوعی</b>\n\nمدل فعلی: <b>${escapeHtml(settings.model)}</b>\n\n` +
-        pxTemplate`🟩 = NVIDIA (رایگان، تست‌شده) · 🔷 = Gemini\n` +
-        pxTemplate`💡 <i>اگر مدل انتخابی خطا بدهد، خودکار به مدل سالم بعدی سوئیچ می‌شود.</i>\n\n` +
-        pxTemplate`👇 روی مدل مورد نظر بزنید:`, modelsKb(settings.model));
+      const view = modelsView(settings.model, "all", 1);
+      return sendMessage(chatId, view.text, view.keyboard);
     }
 
     case "/ocr": {
@@ -3958,7 +4130,17 @@ async function handleLocalizedMessage(env, msg) {
       const m = kbAction.slice(5);
       if (m === "chat") {
         await delDb(env, `user:${userId}:mode`);
-        return sendMessage(chatId, pxText("💬 <b>چت هوشمند فعال شد!</b>\n\nپیام بفرستید…"), backKb());
+        const s = await getUserSettings(env, userId);
+        const curModelObj = ALL_CATALOG_MODELS.find(x => x.id === s.model);
+        const modelName = s.model === "auto" ? "🤖 خودکار (هوشمند)" : (curModelObj ? `${curModelObj.badge} ${curModelObj.name}` : s.model);
+        return sendMessage(chatId,
+          pxTemplate`💬 <b>چت هوشمند فعال شد!</b>\n\n` +
+          pxTemplate`📌 <b>مدل فعال:</b> <code>${modelName}</code>\n\n` +
+          pxText("پیام خود را بفرستید…"),
+          inlineKb([
+            [{ text: pxText("🎛 تغییر مدل"), callback_data: "models" }, { text: pxText("🔄 چت جدید"), callback_data: "newchat" }],
+            [{ text: pxText("📋 منوی اصلی"), callback_data: "menu" }]
+          ]));
       }
       if (!STICKY_MODES[m]) return sendMessage(chatId, pxText("⚠️ این حالت موجود نیست."), backKb());
       await putDb(env, `user:${userId}:mode`, m);
@@ -3967,7 +4149,8 @@ async function handleLocalizedMessage(env, msg) {
     }
     if (kbAction === "models") {
       const s2 = await getUserSettings(env, userId);
-      return sendMessage(chatId, pxTemplate`🎛 <b>انتخاب مدل</b>\n\nمدل فعلی: <b>${escapeHtml(s2.model)}</b>`, modelsKb(s2.model));
+      const view = modelsView(s2.model, "all", 1);
+      return sendMessage(chatId, view.text, view.keyboard);
     }
     if (kbAction === "usage") return handleUsageDashboard(chatId, userId, env);
     if (kbAction === "settings") {
