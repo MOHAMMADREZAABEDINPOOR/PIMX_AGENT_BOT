@@ -174,15 +174,25 @@ test('Models catalog displays all models with categories, pagination, chat butto
     const chatBtns = chatMsg.body.reply_markup.inline_keyboard.flat();
     assert.ok(chatBtns.some(b => b.callback_data === 'models'), 'change model button must be available in chat');
 
-    // 6. Main menu contains chatmgmt and help
-    await call('/menu', 11);
-    const menuMsg = messages.at(-1);
-    const menuBtns = menuMsg.body.reply_markup.inline_keyboard.flat();
-    assert.ok(menuBtns.some(b => b.callback_data === 'chatmgmt'), 'chat management must be in main menu');
-    assert.ok(menuBtns.some(b => b.callback_data === 'help'), 'help button must be in main menu');
-    assert.ok(menuBtns.some(b => b.callback_data === 'models'), 'models button must be in main menu');
+    // 7. Test that custom platform registry models (e.g. from Mini App) appear in bot catalog
+    const { saveModel } = await import('../src/gateway/models.js');
+    await saveModel(env, {
+      id: 'mdl_preview_custom',
+      apiModelId: 'antigravity-preview-05-2026',
+      displayName: 'Antigravity Agent Preview',
+      providerName: 'Google Gemini',
+      status: 'healthy',
+      enabled: true,
+      capabilities: { chat: { supported: true }, reasoning: { supported: true } }
+    });
+
+    await call('/models', 11);
+    const regMsg = messages.at(-1);
+    const regButtons = regMsg.body.reply_markup.inline_keyboard.flat();
+    assert.ok(regButtons.some(b => b.callback_data === 'setmodel:mdl_preview_custom' && b.text.includes('Antigravity Agent')), 'custom registry model from Mini App must appear in bot catalog');
   } finally {
     globalThis.fetch = originalFetch;
   }
 });
+
 

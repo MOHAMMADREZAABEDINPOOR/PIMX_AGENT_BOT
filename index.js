@@ -1666,19 +1666,100 @@ const ALL_CATALOG_MODELS = [
   { id: "codestral-latest", name: "Codestral", provider: "mistral", badge: "🟧", cats: ["coding"] }
 ];
 
+// تبدیل مدل رجیستری پلتفرم به فرمت کاتالوگ بات تلگرام
+function registryToCatalog(m) {
+  const id = m.id || m.apiModelId;
+  const apiId = m.apiModelId || m.id;
+  const prov = (m.providerName || "").toLowerCase();
+  const badge = /gemini|google/i.test(prov) ? "🔷"
+    : /openrouter/i.test(prov) ? "🟪"
+    : /mistral/i.test(prov) ? "🟧"
+    : /nvidia/i.test(prov) ? "🟩"
+    : /anthropic|claude/i.test(prov) ? "🟣"
+    : /openai/i.test(prov) ? "⬜"
+    : /deepseek/i.test(prov) ? "🔵"
+    : /groq/i.test(prov) ? "⚡"
+    : /cohere/i.test(prov) ? "💠"
+    : "🟢";
+
+  const cats = [];
+  const caps = m.capabilities || {};
+  if (caps.chat?.supported !== false) cats.push("chat");
+  if (caps.vision?.supported || caps.image_input?.supported || /vision|-vl|vl-|llava|gemini|pixtral/i.test(apiId)) cats.push("vision");
+  if (caps.reasoning?.supported || caps.chain_of_thought?.supported || /reason|think|nemotron|deepseek-r1|o1|o3/i.test(apiId)) cats.push("reasoning");
+  if (caps.coding?.supported || caps.code_generation?.supported || /code|coder|codestral/i.test(apiId)) cats.push("coding");
+  if (/\b(nano|mini|small|lite|xs|8b|7b|9b|flash)\b/i.test(apiId)) cats.push("fast");
+  if (!cats.length) cats.push("chat");
+
+  const name = m.displayName || apiId.split("/").pop();
+  return {
+    id: m.id,
+    apiModelId: apiId,
+    name,
+    provider: m.providerName || prov,
+    badge,
+    cats,
+    status: m.status || "healthy",
+    enabled: m.enabled !== false,
+    isRegistry: true
+  };
+}
+
+async function getFullCatalog(env = null) {
+  let registry = [];
+  try {
+    if (env) {
+      registry = await pfListModels(env);
+    }
+  } catch {}
+
+  const catalog = [];
+  const seenIds = new Set();
+
+  if (registry && registry.length) {
+    for (const m of registry) {
+      if (m.enabled === false) continue;
+      const caps = m.capabilities || {};
+      if (caps.chat?.supported === false && caps.embedding?.supported === true) continue;
+      const id = m.id || m.apiModelId;
+      const apiId = m.apiModelId || m.id;
+      seenIds.add(id);
+      seenIds.add(apiId);
+      catalog.push(registryToCatalog(m));
+    }
+  }
+
+  for (const bm of ALL_CATALOG_MODELS) {
+    if (!seenIds.has(bm.id)) {
+      catalog.push(bm);
+      seenIds.add(bm.id);
+    }
+  }
+
+  catalog.sort((a, b) => {
+    if ((a.status === "healthy") !== (b.status === "healthy")) {
+      return a.status === "healthy" ? -1 : 1;
+    }
+    return a.name.localeCompare(b.name);
+  });
+
+  return catalog;
+}
+
 function getCatalogModels(category = "all") {
   if (category === "all") return ALL_CATALOG_MODELS;
   return ALL_CATALOG_MODELS.filter(m => m.cats.includes(category));
 }
 
-function modelsView(current, category = "all", page = 1) {
-  const models = getCatalogModels(category);
+async function modelsView(env, current, category = "all", page = 1) {
+  const allModels = await getFullCatalog(env);
+  const models = category === "all" ? allModels : allModels.filter(m => m.cats.includes(category));
   const total = models.length;
   const pageSize = 8;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const curPage = Math.max(1, Math.min(page, totalPages));
 
-  const curModelObj = ALL_CATALOG_MODELS.find(m => m.id === current);
+  const curModelObj = allModels.find(m => m.id === current || m.apiModelId === current) || ALL_CATALOG_MODELS.find(m => m.id === current);
   const curModelLabel = current === "auto"
     ? pxText("🤖 خودکار (هوشمند)")
     : (curModelObj ? `${curModelObj.badge} ${curModelObj.name}` : escapeHtml(current));
@@ -1695,7 +1776,7 @@ function modelsView(current, category = "all", page = 1) {
   const text = pxTemplate`🎛 <b>کتابخانه و انتخاب مدل‌های هوش مصنوعی</b>\n\n` +
     pxTemplate`📌 <b>مدل انتخابی:</b> <code>${curModelLabel}</code>\n` +
     pxTemplate`📁 <b>دسته:</b> <b>${catLabels[category] || category}</b>\n` +
-    pxTemplate`📊 <b>تعداد مدل‌ها:</b> ${total} مدل (صفحه ${curPage} از ${totalPages})\n\n` +
+    pxTemplate`📊 <b>تعداد مدل‌ها:</b> ${total} مدل در دسترس (صفحه ${curPage} از ${totalPages})\n\n` +
     pxTemplate`▫️ <i>برای تغییر مدل، روی دکمهٔ مدل مورد نظر بزنید.</i>\n` +
     pxTemplate`▫️ <i>برای شروع گفتگو با مدل انتخابی، «💬 شروع چت با مدل» را لمس کنید.</i>`;
 
@@ -1717,9 +1798,9 @@ function modelsView(current, category = "all", page = 1) {
   const start = (curPage - 1) * pageSize;
   const pageModels = models.slice(start, start + pageSize);
   const modelBtns = pageModels.map(m => {
-    const isCur = current === m.id;
+    const isCur = current === m.id || current === m.apiModelId;
     return {
-      text: `${isCur ? "✅ " : m.badge + " "}${m.name}`,
+      text: `${isCur ? "✅ " : m.badge + " "}${m.name.slice(0, 24)}`,
       callback_data: `setmodel:${m.id}`.slice(0, 64)
     };
   });
@@ -1727,15 +1808,17 @@ function modelsView(current, category = "all", page = 1) {
     kbRows.push(modelBtns.slice(i, i + 2));
   }
 
-  // ۳. ناوبری و صفحه‌بندی
+  // ۳. ناوبری و صفحه‌بندی هوشمند
   if (totalPages > 1) {
     const navRow = [];
     if (curPage > 1) {
+      if (totalPages > 4) navRow.push({ text: "⏮ ۱", callback_data: `models:p:${category}:1` });
       navRow.push({ text: "◀️ قبلی", callback_data: `models:p:${category}:${curPage - 1}` });
     }
     navRow.push({ text: `📄 ${curPage} / ${totalPages}`, callback_data: `models:c:${category}:${curPage}` });
     if (curPage < totalPages) {
       navRow.push({ text: "بعدی ▶️", callback_data: `models:p:${category}:${curPage + 1}` });
+      if (totalPages > 4) navRow.push({ text: `${totalPages} ⏭`, callback_data: `models:p:${category}:${totalPages}` });
     }
     kbRows.push(navRow);
   }
@@ -1759,7 +1842,49 @@ function modelsView(current, category = "all", page = 1) {
 }
 
 function modelsKb(current, category = "all", page = 1) {
-  return modelsView(current, category, page).keyboard;
+  const models = getCatalogModels(category);
+  const total = models.length;
+  const pageSize = 8;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const curPage = Math.max(1, Math.min(page, totalPages));
+  const kbRows = [];
+  kbRows.push([
+    { text: category === "chat" ? "🔘 💬 چت" : "💬 چت", callback_data: "models:c:chat:1" },
+    { text: category === "coding" ? "🔘 💻 کد" : "💻 کد", callback_data: "models:c:coding:1" },
+    { text: category === "reasoning" ? "🔘 🧠 استدلال" : "🧠 استدلال", callback_data: "models:c:reasoning:1" }
+  ]);
+  kbRows.push([
+    { text: category === "vision" ? "🔘 🖼 بینایی" : "🖼 بینایی", callback_data: "models:c:vision:1" },
+    { text: category === "fast" ? "🔘 ⚡ سریع" : "⚡ سریع", callback_data: "models:c:fast:1" },
+    { text: category === "all" ? "🔘 🌐 همه" : "🌐 همه", callback_data: "models:c:all:1" }
+  ]);
+  const start = (curPage - 1) * pageSize;
+  const pageModels = models.slice(start, start + pageSize);
+  const modelBtns = pageModels.map(m => {
+    const isCur = current === m.id || current === m.apiModelId;
+    return {
+      text: `${isCur ? "✅ " : m.badge + " "}${m.name.slice(0, 24)}`,
+      callback_data: `setmodel:${m.id}`.slice(0, 64)
+    };
+  });
+  for (let i = 0; i < modelBtns.length; i += 2) kbRows.push(modelBtns.slice(i, i + 2));
+  if (totalPages > 1) {
+    const navRow = [];
+    if (curPage > 1) navRow.push({ text: "◀️ قبلی", callback_data: `models:p:${category}:${curPage - 1}` });
+    navRow.push({ text: `📄 ${curPage} / ${totalPages}`, callback_data: `models:c:${category}:${curPage}` });
+    if (curPage < totalPages) navRow.push({ text: "بعدی ▶️", callback_data: `models:p:${category}:${curPage + 1}` });
+    kbRows.push(navRow);
+  }
+  kbRows.push([
+    { text: pxText("💬 شروع چت با مدل"), callback_data: "mode:chat", style: "primary" },
+    { text: `${current === "auto" ? "✅ " : ""}🤖 خودکار (هوشمند)`, callback_data: "setmodel:auto" }
+  ]);
+  kbRows.push([
+    { text: pxText("🔄 تست سلامت مدل‌ها"), callback_data: "testmodels" },
+    { text: pxText("🔌 پروایدرها"), callback_data: "pf:providers" }
+  ]);
+  kbRows.push([{ text: pxText("📋 منوی اصلی"), callback_data: "menu" }]);
+  return inlineKb(kbRows);
 }
 
 function settingsKb() {
@@ -1887,25 +2012,53 @@ async function aiReply(env, chatId, userId, userText, opts = {}) {
         result.sources = hits.map(h => ({ title: h.title, uri: h.uri }));
       }
     } else if (chosenModel && chosenModel !== "auto") {
-      // مدل انتخابی دستی کاربر یا اپ — با fallback خودکار در صورت خطا
-      if (chosenModel.startsWith("gemini")) {
-        result = await callGemini(
-          messages.filter(m => m.role !== "system").map(m => ({
-            role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }]
-          })),
-          { system, think: cfg, models: [chosenModel, ...GEMINI_MODELS] }
-        );
-      } else {
-        try {
-          result = await callNvidiaStream(chosenModel, messages, cfg,
-            async full => await streamer.stream(escapeHtml(full.slice(-3800)) + " ▌"));
-        } catch (err) {
-          // 🔄 مدل انتخابی خراب بود → سوئیچ خودکار به مدل‌های سالم دسته
-          fellBack = true;
-          streamer.lastUpdate = 0;
-          await streamer.stream(pxTemplate`⚠️ <b>مدل ${escapeHtml(chosenModel.split("/").pop())} در دسترس نیست.</b>\n🔄 <i>سوئیچ خودکار به مدل جایگزین...</i>`);
-          result = await callNvidiaCat(category, messages, cfg,
-            async full => await streamer.stream(escapeHtml(full.slice(-3800)) + " ▌"));
+      // مدل انتخابی دستی کاربر یا اپ — ابتدا بررسی رجیستری پلتفرم، سپس مسیرهای کلاسیک
+      let usedGateway = false;
+      try {
+        const regModels = await pfListModels(env);
+        const match = regModels.find(m => m.id === chosenModel || m.apiModelId === chosenModel || m.slug === chosenModel);
+        if (match) {
+          const taskMap = { "👨‍💻 Coding": "coding", "🧠 Reasoning": "reasoning", "🔍 Web": "research", "💬 Chat": "chat" };
+          const r = await gatewayRoute(env, messages, {
+            modelId: match.id,
+            task: taskMap[category] || undefined,
+            maxTokens: cfg.maxTokens, temperature: cfg.temperature, topP: cfg.topP,
+            policy: settings.thinkLevel <= 2 ? 'speed' : settings.thinkLevel >= 4 ? 'quality' : 'balanced',
+            text: userText, userId,
+            onChunk: async full => await streamer.stream(escapeHtml(full.slice(-3800)) + " ▌")
+          });
+          result = r;
+          fellBack = !!r.failover;
+          usedGateway = true;
+          await trackPlatformUsage(env, {
+            userId, modelId: r.modelId, model: r.model, providerName: r.providerName,
+            promptTokens: r.promptTokens, completionTokens: r.completionTokens,
+            cost: r.cost || 0, latency: r.latency, ok: true, task: r.task
+          });
+        }
+      } catch (err) {
+        gatewayError = String(err.message || err);
+      }
+      if (!usedGateway) {
+        if (chosenModel.startsWith("gemini")) {
+          result = await callGemini(
+            messages.filter(m => m.role !== "system").map(m => ({
+              role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }]
+            })),
+            { system, think: cfg, models: [chosenModel, ...GEMINI_MODELS] }
+          );
+        } else {
+          try {
+            result = await callNvidiaStream(chosenModel, messages, cfg,
+              async full => await streamer.stream(escapeHtml(full.slice(-3800)) + " ▌"));
+          } catch (err) {
+            // 🔄 مدل انتخابی خراب بود → سوئیچ خودکار به مدل‌های سالم دسته
+            fellBack = true;
+            streamer.lastUpdate = 0;
+            await streamer.stream(pxTemplate`⚠️ <b>مدل ${escapeHtml(chosenModel.split("/").pop())} در دسترس نیست.</b>\n🔄 <i>سوئیچ خودکار به مدل جایگزین...</i>`);
+            result = await callNvidiaCat(category, messages, cfg,
+              async full => await streamer.stream(escapeHtml(full.slice(-3800)) + " ▌"));
+          }
         }
       }
     } else {
@@ -2803,7 +2956,8 @@ async function handleLocalizedCallback(env, cq) {
     if (mode === "chat") {
       await delDb(env, `user:${userId}:mode`);
       const s = await getUserSettings(env, userId);
-      const curModelObj = ALL_CATALOG_MODELS.find(m => m.id === s.model);
+      const fullCatalog = await getFullCatalog(env);
+      const curModelObj = fullCatalog.find(m => m.id === s.model || m.apiModelId === s.model);
       const modelName = s.model === "auto" ? "🤖 خودکار (هوشمند)" : (curModelObj ? `${curModelObj.badge} ${curModelObj.name}` : s.model);
       return editOrSend(chatId,
         pxTemplate`💬 <b>چت هوشمند فعال شد!</b>\n\n` +
@@ -2853,13 +3007,14 @@ async function handleLocalizedCallback(env, cq) {
       p = parseInt(parts[3], 10) || 1;
     }
     const s = await getUserSettings(env, userId);
-    const view = modelsView(s.model, cat, p);
+    const view = await modelsView(env, s.model, cat, p);
     return editOrSend(chatId, view.text, view.keyboard, cq.message);
   }
   if (data.startsWith("setmodel:")) {
     const m = data.slice(9);
     await saveUserSettings(env, userId, { model: m });
-    const targetObj = ALL_CATALOG_MODELS.find(x => x.id === m);
+    const fullCatalog = await getFullCatalog(env);
+    const targetObj = fullCatalog.find(x => x.id === m || x.apiModelId === m);
     const short = m === "auto" ? pxText("خودکار") : (targetObj ? targetObj.name : m.split("/").pop());
     await ack(pxTemplate`✅ مدل فعال شد: ${short}`);
 
@@ -3848,12 +4003,13 @@ async function handleCommand(env, chatId, userId, text) {
     }
 
     case "/model": {
-      if (!args) return sendMessage(chatId, pxTemplate`🤖 مدل فعلی: <b>${escapeHtml(settings.model)}</b>\n\nتغییر: <code>/model auto</code> یا <code>/model meta/llama-3.3-70b-instruct</code>\nلیست: /models`);
-      const all = ["auto", ...ALL_CATALOG_MODELS.map(m => m.id)];
+      if (!args) return sendMessage(chatId, pxTemplate`🤖 مدل فعلی: <b>${escapeHtml(settings.model)}</b>\n\nتغییر: <code>/model auto</code> یا <code>/model نام‌مدل</code>\nلیست: /models`);
+      const fullCatalog = await getFullCatalog(env);
+      const all = ["auto", ...fullCatalog.map(m => m.id), ...fullCatalog.map(m => m.apiModelId).filter(Boolean)];
       const match = all.find(m => m === args || m.endsWith("/" + args) || m.includes(args));
       if (!match) return sendMessage(chatId, pxTemplate`⚠️ مدل <code>${escapeHtml(args)}</code> یافت نشد. /models را ببینید.`);
       await saveUserSettings(env, userId, { model: match });
-      const targetObj = ALL_CATALOG_MODELS.find(x => x.id === match);
+      const targetObj = fullCatalog.find(x => x.id === match || x.apiModelId === match);
       const provName = match === "auto" ? pxText("مسیریابی هوشمند پلتفرم") : (targetObj ? targetObj.provider.toUpperCase() : providerOf(match).toUpperCase());
       const confirmText = pxTemplate`✅ <b>مدل فعال:</b> <code>${match === "auto" ? "🤖 خودکار (هوشمند)" : (targetObj ? `${targetObj.badge} ${targetObj.name}` : escapeHtml(match))}</code>\n` +
         pxTemplate`🏢 <b>پروایدر:</b> <b>${escapeHtml(provName)}</b>\n\n` +
@@ -3865,7 +4021,7 @@ async function handleCommand(env, chatId, userId, text) {
       return sendMessage(chatId, confirmText, confirmKb);
     }
     case "/models": {
-      const view = modelsView(settings.model, "all", 1);
+      const view = await modelsView(env, settings.model, "all", 1);
       return sendMessage(chatId, view.text, view.keyboard);
     }
 
@@ -4131,7 +4287,8 @@ async function handleLocalizedMessage(env, msg) {
       if (m === "chat") {
         await delDb(env, `user:${userId}:mode`);
         const s = await getUserSettings(env, userId);
-        const curModelObj = ALL_CATALOG_MODELS.find(x => x.id === s.model);
+        const fullCatalog = await getFullCatalog(env);
+        const curModelObj = fullCatalog.find(x => x.id === s.model || x.apiModelId === s.model);
         const modelName = s.model === "auto" ? "🤖 خودکار (هوشمند)" : (curModelObj ? `${curModelObj.badge} ${curModelObj.name}` : s.model);
         return sendMessage(chatId,
           pxTemplate`💬 <b>چت هوشمند فعال شد!</b>\n\n` +
@@ -4149,7 +4306,7 @@ async function handleLocalizedMessage(env, msg) {
     }
     if (kbAction === "models") {
       const s2 = await getUserSettings(env, userId);
-      const view = modelsView(s2.model, "all", 1);
+      const view = await modelsView(env, s2.model, "all", 1);
       return sendMessage(chatId, view.text, view.keyboard);
     }
     if (kbAction === "usage") return handleUsageDashboard(chatId, userId, env);
